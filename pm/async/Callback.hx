@@ -4,6 +4,7 @@ import pm.Noise;
 import pm.Assert.assert;
 import pm.Error;
 
+@:forward
 abstract Callback<T> (T -> Void) from (T -> Void) {
     /* Constructor Function */
     public inline function new(fn) {
@@ -105,7 +106,7 @@ abstract CallbackLink(LinkObject) from LinkObject {
     }
 
     @:to inline function toCallback<A>():Callback<A> {
-                                         return function (_) this.cancel();
+        return function (_) this.cancel();
     }
 
     @:from static inline function fromFunction(fn: Void->Void) {
@@ -133,6 +134,20 @@ private class SimpleLink implements LinkObject {
         if (fn != null) {
             fn();
             fn = null;
+        }
+    }
+}
+
+class FwdLink implements LinkObject {
+    var link(default, null): LinkObject;
+    function new(l) {
+        link = l;
+    }
+
+    public function cancel() {
+        if (link != null) {
+            link.cancel();
+            link = null;
         }
     }
 }
