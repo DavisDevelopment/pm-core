@@ -5,6 +5,9 @@ import haxe.ds.Option;
 //use this for macros or other classes
 @:forward
 abstract Generator<T> (GeneratorObject<T>) from GeneratorObject<T> {
+    /**
+      build an Iterable<T> from [this] Generator<T>
+     **/
     @:runtime @:to
     public function iterable():Iterable<T> {
         var g:Generator<T> = this;
@@ -60,7 +63,12 @@ abstract Generator<T> (GeneratorObject<T>) from GeneratorObject<T> {
             }
         }
 
-        return {iterator:()->{hasNext:hasNext, next:next}};
+        return {
+            iterator: () -> {
+                hasNext: hasNext,
+                next: next
+            }
+        };
     }
 
     public static inline function empty<T>():Generator<T> return Empty.make();
@@ -169,27 +177,44 @@ class Compound<T> extends GeneratorBase<T> {
                 return Clog(err, new Compound(parts));
         }
     }
+
     override function decompose(into: Array<Generator<T>>) {
         for (s in parts)
             s.decompose(into);
     }
 
-    public static function 
-        make<T>(gens: Array<Generator<T>>):Generator<T> {
-            var parts = [];
-            for (g in gens)
-                g.decompose(parts);
-            return new Compound( parts );
-        }
+    public static function make<T>(gens: Array<Generator<T>>):Generator<T> {
+        var parts = [];
+        for (g in gens)
+            g.decompose(parts);
+        return new Compound( parts );
+    }
 }
 
+class FwdGenerator<T> extends GeneratorBase<T> {
+    var generator(default, null): Null<GeneratorObject<T>>;
+
+    function new(g) {
+        generator = g;
+    }
+
+    override function next():Step<T> return generator.next();
+    override function forEach(h: Handler<T>):Conclusion<T> return generator.forEach( h );
+    override function decompose(into: Array<Generator<T>>) return generator.decompose( into );
+
+    override function get_depleted() return generator.depleted;
+}
+
+@:allow(pm.Generator.GeneratorObject)
 class GeneratorBase<T> implements GeneratorObject<T> {
     public function next():Step<T> {
         throw 'Not implemented';
     }
+
     public function forEach(handler: Handler<T>):Conclusion<T> {
         throw 'Not implemented';
     }
+
     public function decompose(into: Array<Generator<T>>) {
         into.push( this );
     }
