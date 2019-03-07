@@ -1,11 +1,11 @@
-package pmdb.async;
+package pm.async;
 
-import pmdb.core.Error.NotImplementedError;
-import pmdb.core.ds.Noise;
-import pmdb.core.ds.Outcome;
+import pm.Error.NotImplementedError;
+import pm.Noise;
+import pm.Outcome;
 
-import pmdb.async.Callback;
-import pmdb.async.Deferred;
+import pm.async.Callback;
+import pm.async.Deferred;
 
 class Promise<Val, Err> {
     var d(default, null): Deferred<Val, Err>;
