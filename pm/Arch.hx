@@ -377,10 +377,10 @@ class Arch {
      **/
     public static inline function isAtomic(x: Dynamic):Bool {
         return (
-            x.is_null() ||
-            x.is_string() ||
-            x.is_boolean()||
-            x.is_number()
+            isNull( x ) ||
+            isString( x ) ||
+            isBool( x ) ||
+            isFloat( x )
         );
     }
 
