@@ -318,7 +318,7 @@ class LinkedQueueNode<T> {
     }
 }
 
-@:access(pmdb.core.ds.LinkedQueue)
+@:access(pm.LinkedQueue)
 class LinkedQueueIterator<T> implements Itr<T> {
     var queue: LinkedQueue<T>;
     var walker: LinkedQueueNode<T>;
