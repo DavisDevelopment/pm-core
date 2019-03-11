@@ -1,6 +1,7 @@
 package pm.async;
 
-import pm.Error.NotImplementedError;
+import pm.Error;
+import pm.Assert.assert;
 import pm.Noise;
 import pm.Outcome;
 
@@ -64,20 +65,8 @@ abstract Deferred<Val, Err> (IDeferred<Val, Err>) from IDeferred<Val, Err> to ID
         exec( out );
         return out;
     }
-    public static function create<V,E>(isAsync = true):Deferred<V, E> {
-        if ( isAsync )
-            return new AsyncDeferred<V,E>();
-        else
-            return new SyncDeferred<V,E>();
-    }
-
-    @:from
-    public static function monadicAsync<V, E>(exec: (resolve:V->Void)->Void):Deferred<V, E> {
-        return asyncBase(function(d: Deferred<V, E>) {
-            exec(function(result: V) {
-                d.done( result );
-            });
-        });
+    public static function create<V,E>():Deferred<V, E> {
+        return new AsyncDeferred<V,E>();
     }
 
     @:from
@@ -91,6 +80,15 @@ abstract Deferred<Val, Err> (IDeferred<Val, Err>) from IDeferred<Val, Err> to ID
                     case Failure(x):
                         d.fail( x );
                 }
+            });
+        });
+    }
+
+    @:from
+    public static function monadicAsync<V, E>(exec: (resolve:V->Void)->Void):Deferred<V, E> {
+        return asyncBase(function(d: Deferred<V, E>) {
+            exec(function(result: V) {
+                d.done( result );
             });
         });
     }

@@ -56,7 +56,7 @@ class Future<Val, Err> {
             }
         }
         else {
-            throw new WTFError();
+            throw new Error();
         }
     }
 
@@ -79,7 +79,7 @@ class Future<Val, Err> {
         }
         else { 
             trace( this );
-            throw new WTFError();
+            throw new Error();
         }
     }
 
@@ -123,7 +123,7 @@ class Future<Val, Err> {
                         fn( x ).handle( exit );
 
                     case Failure(x):
-                        exit(Outcome.Failure( x ));
+                        exit.invoke(Outcome.Failure( x ));
                 }
             });
         });

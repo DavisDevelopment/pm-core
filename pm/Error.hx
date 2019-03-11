@@ -44,3 +44,14 @@ class ValueError<T> extends Error {
 
 class NotImplementedError extends Error {}
 class WTFError extends Error {}
+
+class InvalidOperation<T> extends Error {
+    private var _op(default, null): T;
+    public var op(default, null): String;
+
+    public function new(op, ?msg, ?type, ?pos) {
+        super(msg, type, pos);
+        this._op = op;
+        this.op = '$_op';
+    }
+}
