@@ -25,7 +25,7 @@ class Signal<T> {
         return listen(fn, once);
     }
 
-    public function listen(fn:Callback<T>, prepend=false, once=false):CallbackLink {
+    public function listen(fn:Callback<T>, ?prepend:Bool=false, ?once:Bool=false):CallbackLink {
         var lnk:CallbackLink = null;
         var callback:Callback<T> = if (once) 
             (function(x) {
