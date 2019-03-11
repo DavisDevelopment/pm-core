@@ -4,8 +4,6 @@ using Lambda;
 
 class LinkedStack<T> implements IStack<T> {
     public function new(?src:Array<T>) {
-        key = keygen.next();
-
         if (src != null) {
             var node;
             mTop = src.length;
@@ -256,13 +254,11 @@ class LinkedStack<T> implements IStack<T> {
 
 /* === Variables === */
 
-    public var key(default, null): Int;
+    public var key(default, null): Int = HashKey.next();
     public var size(get, never): Int;
 
     var mHead: Null<LinkedStackNode<T>> = null;
     var mTop: Int = 0;
-
-    static var keygen = new Incrementer(0);
 }
 
 class LinkedStackNode<T> {
@@ -278,7 +274,7 @@ class LinkedStackNode<T> {
     }
 }
 
-@:access(pmdb.core.ds.LinkedStack)
+@:access(pm.LinkedStack)
 class LinkedStackIterator<T> implements Itr<T> {
     var stack: LinkedStack<T>;
     var walker: LinkedStackNode<T>;
