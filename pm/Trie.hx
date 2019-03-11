@@ -12,7 +12,7 @@ class Trie<T> {
     }
 
     public function contains(key: String):Bool {
-        final node = getNode( key );
+        var node = getNode( key );
         return node != null;
     }
 
@@ -26,6 +26,34 @@ class Trie<T> {
         }
         return null;
     }
+
+    /**
+      obtain a reference to the node with the given key
+     **/
+    
+    public function getNodePooYai(key: String) {
+        var node = root,
+        remaining = key;
+
+        while (remaining.length > 0) {
+            var child:Null<TrieNode<T>> = null;
+            for (childKey in node.children.keys()) {
+                var prefix = common(remaining, childKey);
+                if (prefix.length == 0) {
+                    continue;
+                }
+                if (prefix.length == childKey.length) {
+                    child = node.children[childKey];
+                    remaining = remaining.substring(childKey.length);
+                    break;
+                }
+                else {
+                    
+                }
+            }
+        }
+    }
+
 
     public function insert(key:String, ?value:T) {
         var node = root,
@@ -50,6 +78,11 @@ class Trie<T> {
                     node.children.remove(childKey);
                     node.children[prefix] = child;
                     remaining = remaining.substring(prefix.length);
+                    //Sys.println(
+                        //'${childKey.substring(prefix.length)}|${prefix}' +
+                        //'  =>  ' +
+                        //'["${childKey.substring(prefix.length)}", "$prefix"]'
+                    //);
                 }
             }
             if (child == null && remaining.length > 0) {
@@ -108,10 +141,7 @@ class Trie<T> {
         return mapped;
     }
 
-    /**
-      obtain a reference to the node with the given key
-     **/
-    private function getNode(key: String):Null<TrieNode<T>> {
+    private function getNode(key:String, leaf=true):Null<TrieNode<T>> {
         var node:Null<TrieNode<T>> = this.root;
         var remaining:String = key;
 
@@ -119,18 +149,18 @@ class Trie<T> {
             var child:Null<TrieNode<T>> = null;
 
             for (i in 0...remaining.length) {
-                trace( remaining );
+                //trace( remaining );
                 if (node.children.exists(remaining.substring(0, i))) {
                     child = node.children[remaining.substring(0, i)];
                     remaining = remaining.substring( i );
-                    break;
+                    //break;
                 }
             }
 
             node = child;
         }
 
-        if (remaining.length == 0 && node != null && node.terminal)
+        if (node != null && node.terminal == leaf)
             return node;
         else
             return null;
