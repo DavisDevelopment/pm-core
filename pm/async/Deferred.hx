@@ -59,10 +59,16 @@ abstract Deferred<Val, Err> (IDeferred<Val, Err>) from IDeferred<Val, Err> to ID
 
     //public static function mAsync<V, E>(exec:(yes:V->Void, nah:E->Void)->Void):Deferred<V, E> {
     @:from
-    public static function asyncBase<V, E>(exec:(dv: Deferred<V, E>) -> Void):Deferred<V, E> {
+    public static function asyncBase<V, E>(exec:(dv: AsyncDeferred<V, E>) -> Void):Deferred<V, E> {
         var out = new AsyncDeferred<V, E>();
         exec( out );
         return out;
+    }
+    public static function create<V,E>(isAsync = true):Deferred<V, E> {
+        if ( isAsync )
+            return new AsyncDeferred<V,E>();
+        else
+            return new SyncDeferred<V,E>();
     }
 
     @:from
@@ -70,6 +76,21 @@ abstract Deferred<Val, Err> (IDeferred<Val, Err>) from IDeferred<Val, Err> to ID
         return asyncBase(function(d: Deferred<V, E>) {
             exec(function(result: V) {
                 d.done( result );
+            });
+        });
+    }
+
+    @:from
+    public static function outcomeCallback<V,E>(exec:Callback<Outcome<V, E>>->Void):Deferred<V, E> {
+        return asyncBase(function(d) {
+            exec(function(o: Outcome<V, E>) {
+                switch o {
+                    case Success(x):
+                        d.done( x );
+
+                    case Failure(x):
+                        d.fail( x );
+                }
             });
         });
     }
@@ -85,6 +106,21 @@ abstract Deferred<Val, Err> (IDeferred<Val, Err>) from IDeferred<Val, Err> to ID
                     d.fail( except );
                 }
             );
+        });
+    }
+
+    @:from
+    public static function dyadicCbAsync<V, E>(exec: (?V -> ?E -> Void) -> Void):Deferred<V, E> {
+        return dyadicAsync(function(yes, no) {
+            exec(function(?result:V, ?exception:E) {
+                switch [result, exception] {
+                    case [_, null]:
+                        yes( result );
+
+                    case [_, _]:
+                        no( exception );
+                }
+            });
         });
     }
 }
@@ -172,7 +208,7 @@ interface IDeferred<Value, Except> {
     //var _handler(default, set): (r: DeferredResolution<Value, Except>)->Void;
 }
 
-@:using(pmdb.async.Deferred.DeferredStateTools)
+@:using(pm.async.Deferred.DeferredStateTools)
 enum DeferredState<A, B> {
     Pending;
     //Running;
@@ -180,7 +216,7 @@ enum DeferredState<A, B> {
     Resolved(res: DeferredResolution<A, B>);
 }
 
-@:using(pmdb.async.Deferred.DeferredResolutionTools)
+@:using(pm.async.Deferred.DeferredResolutionTools)
 enum DeferredResolution<A, B> {
     Result(x: A);
     Exception(x: B);
