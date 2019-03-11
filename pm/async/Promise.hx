@@ -6,90 +6,36 @@ import pm.Outcome;
 
 import pm.async.Callback;
 import pm.async.Deferred;
+import pm.async.Future;
 
-class Promise<Val, Err> {
-    var d(default, null): Deferred<Val, Err>;
-
-    var ss:{v:Signal<Val>, e:Signal<Err>} = null;
-    var _o:Null<Outcome<Val, Err>> = null;
-    //var 
-
-    public function new(base: Deferred<Val, Err>):Void {
-        this.d = base;
-        var needSigs = true;
-        this.d.handle(function(r: DeferredResolution<Val, Err>) {
-            switch ( r ) {
-                case Result(x):
-                    _o = Success( x );
-                    if (ss != null) 
-                        ss.v.broadcast( x );
-
-                case Exception(x):
-                    _o = Failure( x );
-                    if (ss != null)
-                        ss.e.broadcast( x );
-            }
-
-            needSigs = false;
-        });
-
-        if (_o == null) {
-            ss = {v:new Signal<Val>(), e:new Signal<Err>()};
-        }
+@:forward
+abstract Promise<T> (TProm<T>) from TProm<T> to TProm<T> {
+    public inline function new(d: Deferred<T, Dynamic>) {
+        this = new Future<T, Dynamic>( d );
     }
 
-    public function catchException(onErr: Err -> Void) {
-        if (ss != null) {
-            ss.e.listen( onErr );
-        }
-        else if (_o != null) {
-            switch _o {
-                case Failure(e):
-                    onErr( e );
-                case _:
-                    //
-            }
-        }
-        else {
-            throw new WTFError();
-        }
+    public inline function then(resolved:Callback<T>, ?rejected:Callback<Dynamic>):Promise<T> {
+        this.then((x -> resolved.invoke(x)), rejected != null ? (x -> rejected.invoke(x)) : null);
+        return this;
     }
 
-    public function then(onRes:Val->Void, ?onErr:Err->Void) {
-        //d.handle(_handleCb(onRes, onErr));
-        if (ss != null) {
-            ss.v.listen(onRes);
-            if (onErr != null)
-                ss.e.listen(onErr);
-        }
-        else if (_o != null) {
-            switch ( _o ) {
-                case Success(x):
-                    onRes( x );
-
-                case Failure(x):
-                    if (onErr != null)
-                        onErr( x );
-            }
-        }
-        else { 
-            trace( this );
-            throw new WTFError();
-        }
+    public inline function omap<OT>(fn: TOut<T> -> TOut<OT>):Promise<OT> {
+        return this.omap( fn );
     }
 
-    //static function _handleCb<V,E>(v:V->Void, ?e:E->Void):DeferredResolution<V, E>->Void {
-        //return function(res: DeferredResolution<V, E>) {
-            //switch ( res ) {
-                //case Result(x):
-                    //v( x );
+    public inline function map<O>(fn: T -> O):Promise<O> {
+        return this.map( fn );
+    }
 
-                //case Exception(x) if (e != null):
-                    //e( x );
+    public inline function flatMap<O>(fn: T -> Promise<O>):Promise<O> {
+        return this.flatMap( fn );
+    }
 
-                //default:
-                    //return ;
-            //}
-        //}
-    //}
+    @:from
+    public static inline function make<T>(d: Deferred<T, Dynamic>):Promise<T> {
+        return new TProm( d );
+    }
 }
+
+typedef TProm<T> = pm.async.Future<T, Dynamic>;
+typedef TOut<T> = pm.Outcome.Outcome<T, Dynamic>;
