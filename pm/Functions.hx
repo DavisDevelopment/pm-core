@@ -1,7 +1,13 @@
 package pm;
 
 class Functions {
+    public static function identity<T>(value: T):T {
+        return value;
+    }
 
+    public static function noop():Void {
+        // betty
+    }
 }
 
 class Nilads {
@@ -57,6 +63,18 @@ class Monads {
 
     public static inline function call<A,B>(f: A -> B, a:A):B {
         return f( a );
+    }
+}
+
+class VMonads {
+    public static function noop<T>(x: T):Void { }
+
+    public static function once<T>(fn: T->Void):T->Void {
+        return function(v: T) {
+            var t = fn;
+            fn = noop;
+            t( v );
+        }
     }
 }
 
