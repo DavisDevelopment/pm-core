@@ -158,7 +158,15 @@ class Arrays {
 
 
     public static function chunk<T>(array:Array<T>, size:Int):Array<Array<T>> {
-        var chunks = alloc(Math.floor((array.length + 0.0) / size));
+        var chunks = [];//alloc(Math.floor((array.length + 0.0) / size));
+        var zipr = array.slice( 0 ), i = 0;
+        while (zipr.length > size)
+            chunks.push(zipr.splice(0, size));
+        if (zipr.length > 0)
+            chunks.push(zipr);
+        return chunks;
+
+        /*
         for (pos in 0...chunks.length)
             chunks[pos] = alloc( size );
         var cc;
@@ -169,6 +177,7 @@ class Arrays {
             }
         }
         return chunks;
+        */
     }
 
 /* === Platform-Generic Methods === */
