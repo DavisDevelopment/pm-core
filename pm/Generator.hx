@@ -72,21 +72,20 @@ abstract Generator<T> (GeneratorObject<T>) from GeneratorObject<T> {
     }
 
     public static inline function empty<T>():Generator<T> return Empty.make();
+
+    @:from
+    public static function single<T>(v: T):Generator<T> { return Single.make(v); }
     
     @:from
     public static inline function join<T>(gens: Array<Generator<T>>):Generator<T> {
         return Compound.make( gens );
-    }
-
-    @:from
-    public static function single<T>(v: T):Generator<T> {
-        return Single.make(v);
     }
 }
 
 interface GeneratorObject<T> {
     function next():Step<T>;
     function forEach(h: Handler<T>):Conclusion<T>;
+    function regroup<O>(regrouper: Regrouper<T>):RegroupResult<T
 
     function decompose(into: Array<Generator<T>>):Void;
 
@@ -228,12 +227,14 @@ enum Step<T> {
     Fail(error: Dynamic);
     End;
 }
+
 enum Handled<T> {
     BackOff;
     Finish;
     Resume;
     Errored(err: Dynamic);
 }
+
 enum Conclusion<T> {
     Halted(rest: Generator<T>);
     Clog(err:Dynamic, at:Generator<T>);
@@ -241,8 +242,59 @@ enum Conclusion<T> {
     Depleted;
 }
 
+enum RegroupStatus {
+    Ended;
+    Flowing;
+    Errored(e: Error);
+}
+
+enum RegroupResult<O> {
+    Converted(data: Generator<O>): RegroupResult<O>;
+    Terminated(data: Option<Generator<O>>): RegroupResult<O>;
+    Untouched(): RegroupResult<O>;
+    Errored<Error>(e: Error): RegroupResult<O, Error>;
+}
+
 abstract Handler<T> (T -> Handled<T>) from T -> Handled<T> to T -> Handled<T>{
     public inline function apply(item: T):Handled<T> {
         return this( item );
+    }
+}
+
+@:forward
+abstract Regrouper<I,O,Q> (RegrouperBase<I,O,Q>) from RegrouperBase<I,O,Q> to RegrouperBase<I,O,Q> {
+    @:from
+    public static function make<In, Out, Q>(f: Array<In> -> RegroupStatus<Q> -> RegroupResult<Out, Q>):Regrouper<In, Out, Q> {
+        return new RegrouperBase( f );
+    }
+
+    @:from
+    public static function sync<In, Out, Q>(f: Array<In> -> RegroupStatus<Q> -> RegroupResult<Out, Q>):Regrouper<In, Out, Q> {
+        return make(function(i, s) {
+            return f(i, s);
+        });
+    }
+
+    @:from
+    public static function makeNoStatus<In, Out, Q>(f: Array<In>->Next<RegroupResult<Out, Q>>):Regrouper<In, Out, Q> {
+        return make(function(i, _) return f(i));
+    }
+
+    @:from
+    public static function syncNoStatus<In, Out, Q>(f: Array<In>->RegroupResult<Out, Q>):Regrouper<In, Out, Q> {
+        return sync(function(i, _) return f(i));
+    }
+}
+
+class RegrouperBase<I, O, Q> {
+    /* Constructor Function */
+    public function new(fn: (i:Array<I>, rs:RegroupStatus<Q>) -> RegroupResult<O, Q>) {
+        this.apply = fn;
+    }
+
+/* === Instance Methods === */
+
+    public dynamic function apply(input:Array<I>, status:RegroupStatus<Q>):RegroupResult<O, Q> {
+        throw 'Not Implemented';
     }
 }
