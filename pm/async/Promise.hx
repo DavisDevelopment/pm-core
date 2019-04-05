@@ -33,7 +33,7 @@ abstract Promise<T> (TProm<T>) from TProm<T> to TProm<T> {
 
     @:from
     public static inline function make<T>(d: Deferred<T, Dynamic>):Promise<T> {
-        return new TProm( d );
+        return new TProm<T>( d );
     }
 }
 

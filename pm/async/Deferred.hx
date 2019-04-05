@@ -65,7 +65,7 @@ abstract Deferred<Val, Err> (IDeferred<Val, Err>) from IDeferred<Val, Err> to ID
         exec( out );
         return out;
     }
-    public static function create<V,E>():Deferred<V, E> {
+    public static function create<V,E>():AsyncDeferred<V, E> {
         return new AsyncDeferred<V,E>();
     }
 

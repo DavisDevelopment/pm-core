@@ -80,6 +80,11 @@ abstract Generator<T> (GeneratorObject<T>) from GeneratorObject<T> {
     public static inline function join<T>(gens: Array<Generator<T>>):Generator<T> {
         return Compound.make( gens );
     }
+
+    //@:from
+    //public static inline function gen<T>(next: Void->Step<T>):Generator<T> {
+        //return 
+    //}
 }
 
 interface GeneratorObject<T> {
@@ -99,6 +104,11 @@ class Empty<T> extends GeneratorBase<T> {
     override function next() return Step.End;
     override function forEach(h: Handler<T>):Conclusion<T> {
         return Conclusion.Depleted;
+    }
+    
+    // add nothing
+    override function decompose(into: Array<Generator<T>>) {
+        return ;
     }
 
     public static inline function make<T>():Empty<T> {

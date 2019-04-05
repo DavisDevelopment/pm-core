@@ -1,21 +1,17 @@
 package pm.iterators;
 
-class IteratorIterator<T> {
-    public var outer:Iterator<Iterator<T>>;
+class IterableIterator<T> {
+    public var outer:Iterator<Iterable<T>>;
     public var inner:Iterator<T>;
 
-    public function new(it: Iterator<Iterator<T>>) {
-        outer = it;
+    public inline function new(o: Iterator<Iterable<T>>) {
+        outer = o;
         nextOuter();
-    }
-
-    public static inline function of<T>(it: Iterable<Iterator<T>>):IteratorIterator<T> {
-        return new IteratorIterator<T>(it.iterator());
     }
 
     private inline function nextOuter() {
         if (outer.hasNext())
-            inner = outer.next();
+            inner = (outer.next().iterator());
     }
 
     public function hasNext():Bool {

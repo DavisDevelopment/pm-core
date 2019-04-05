@@ -32,10 +32,13 @@ class Options {
         return flatMap(o, x -> fn(x) ? Some(x) : None);
     }
 
-    public static function or<T>(o:Option<T>, defaultValue:T):Option<T> {
-        return switch o {
-            case None: Some( defaultValue );
-            default: o;
+    public static function orOpt<T>(a:Option<T>, b:Option<T>):Option<T> {
+        return switch a {
+            case Some(_): a;
+            case None: switch b {
+                case Some(_): b;
+                case None: None;
+            }
         }
     }
 
@@ -58,5 +61,20 @@ class Options {
             case Some(v): v;
             case None: throw error.get();
         }
+    }
+}
+
+class Options2 {
+    public static function or<T>(o:Option<T>, defaultValue:T):Option<T> {
+        return switch o {
+            case None: Some( defaultValue );
+            default: o;
+        }
+    }
+}
+
+class Nullables {
+    public static inline function opt<T>(v: Null<T>):Option<T> {
+        return v == null ? None : Some( v );
     }
 }

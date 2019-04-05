@@ -119,6 +119,18 @@ class Arrays {
     }
 
     #if js inline #end
+    public static function reduceInit<T>(a:Array<T>, fn:T->T->T):Null<T> {
+        #if js
+        return untyped a.reduce(fn, agg);
+        #else
+        var agg = a.shift();
+        if (agg == null) return null;
+        else if (empty( a )) return agg;
+        else return reduce(a, fn, agg);
+        #end
+    }
+
+    #if js inline #end
     public static function forEach<T>(a:Array<T>, fn:T -> Void) {
         #if js
         untyped a.forEach( fn );
@@ -218,6 +230,14 @@ class Arrays {
         return a.slice(idxv + 1);
     }
 
+    public static function mapi<T, TOut>(a:Array<T>, f:T -> Int -> TOut):Array<TOut> {
+        var out:Array<TOut> = alloc( a.length );
+        for (i in 0...a.length) {
+            out[i] = f(a[i], i);
+        }
+        return out;
+    }
+
     public static function isort<T>(a:Array<T>, f:T->T->Int):Array<T> {
         haxe.ds.ArraySort.sort(a, f);
         return a;
@@ -225,6 +245,13 @@ class Arrays {
 
     public static function sorted<T>(a:Array<T>, f:T->T->Int):Array<T> {
         return isort(a.copy(), f);
+    }
+
+    public static function find<T>(a:Array<T>, fn:T -> Bool):Null<T> {
+        for (x in a)
+            if (fn( x ))
+                return x;
+        return null;
     }
 
     public static function take<T>(a:Array<T>, n:Int):Array<T> {
@@ -241,6 +268,13 @@ class Arrays {
 
     public static function withPrepend<T>(a:Array<T>, v:T):Array<T> {
         return [v].concat( a  );
+    }
+
+    public static function zip<A, B, C>(a:Array<A>, b:Array<B>, fn:A -> B -> C):Array<C> {
+        if (a.length == b.length) {
+            return [for (i in 0...a.length) fn(a[i], b[i])];
+        }
+        throw new Error('invalid');
     }
 }
 
@@ -262,6 +296,29 @@ class Array2s {
         if (x >= 0 && x < a.length)
             if (a[x] != null && y >= 0 && y < a[x].length)
                 return a[x][y];
+        if ( safety )
+            throw IOError.OutsideBounds;
+        return null;
+    }
+
+    public static function flatten<T>(a: Array<Array<T>>):Array<T> {
+        var res = [];
+        for (x in a)
+            res = res.concat( x );
+        return res;
+    }
+}
+
+class Array3s {
+    public static inline function flatten<T>(a: Array<Array<Array<T>>>):Array<T> {
+        return Array2s.flatten(Array2s.flatten( a ));
+    }
+
+    public static function get<T>(a:Array<Array<Array<T>>>, x:Int, y:Int, z:Int, safety=true):Null<T> {
+        if (x >= 0 && x < a.length)
+            if (a[x] != null && y >= 0 && y < a[x].length)
+                if (a[x][y] != null && z >= 0 && z < a[x][y].length)
+                    return a[x][y][z];
         if ( safety )
             throw IOError.OutsideBounds;
         return null;

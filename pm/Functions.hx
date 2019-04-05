@@ -29,9 +29,24 @@ class Nilads {
     }
 }
 
+class VNilads {
+    public static function once<T>(fn:Void->T):Void->T {
+       var a = [];
+        return function() {
+            if (a.length == 0)
+                a.push(fn());
+            return a[0];
+        }
+    }
+}
+
 class Monads {
     public static function identity<T>(x: T):T {
         return x;
+    }
+
+    public static function apply<A, B>(a:A, fn:A -> B):B {
+        return fn( a );
     }
 
     public inline static function compose<TIn, TRet1, TRet2>(fa:TRet2->TRet1, fb:TIn->TRet2):TIn->TRet1 {
@@ -64,6 +79,24 @@ class Monads {
     public static inline function call<A,B>(f: A -> B, a:A):B {
         return f( a );
     }
+
+    /**
+     * The covariant functor for Function1<A, _>
+     */
+    public inline static function map<A, B, C>(fab:A->B, fbc:B->C):A->C {
+        return function(a: A) {
+            return fbc(fab(a));
+        }
+    }
+
+    /**
+     * The contravariant functor for Function1<_, B>. Equivalent to compose.
+     */
+    public inline static function contramap<A, B, C>(fbc: B -> C, fab: A -> B): A -> C {
+        return function(a: A) {
+            return fbc(fab(a));
+        };
+    }
 }
 
 class VMonads {
@@ -74,6 +107,13 @@ class VMonads {
             var t = fn;
             fn = noop;
             t( v );
+        }
+    }
+
+    public static function chain<T>(monad:T -> Void):T -> T {
+        return function(x: T):T {
+            monad( x );
+            return x;
         }
     }
 }

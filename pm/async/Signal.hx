@@ -57,7 +57,7 @@ class Signal<T> {
     }
 
     public inline function listenerCount() {
-        return ll.length;
+        return ll == null ? 0 : ll.length;
     }
 
     private var ll(default, null): CallbackList<T>;
