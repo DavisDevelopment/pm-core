@@ -93,6 +93,41 @@ class Arrays {
         }
     }
 
+    public static inline function has<T>(a:Array<T>, x:T):Bool {
+        return a.indexOf( x ) != -1;
+    }
+
+    public static function fill<T>(a:Array<T>, v:T) {
+        #if js
+        if (untyped js.Syntax.code('Array.prototype.fill'))
+            untyped a.fill( v );
+        return ;
+        #end
+
+        for (i in 0...a.length)
+            a[i] = v;
+        return ;
+    }
+
+    public static function nullify<T>(a: Array<T>) {
+        fill(a, null);
+    }
+
+    public static function append<T>(a:Array<T>, b:Array<T>) {
+        for (x in b)
+            a.push( x );
+        //a.resize(a.length + b.length);
+        //var i = a.length;
+        //while ((i - a.length) <= b.length) {
+            //a[i] = b[i - a.length];
+            //++i;
+        //}
+        //for (i in 0...b.length) {
+            //a[a.length + i] = b[i];
+        //}
+        //return a;
+    }
+
     #if js inline #end
     public static function reduce<A, B>(arr:Array<A>, reducer:B -> A -> B, init:B):B {
         #if js

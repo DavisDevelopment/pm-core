@@ -41,6 +41,10 @@ class Floats {
   static var pattern_inf = ~/^\+?(inf|Inf|INF)$/;
   static var pattern_neg_inf = ~/^-(inf|Inf|INF)$/;
 
+  public static inline function floor(n: Float):Int return Math.floor( n );
+  public static inline function ceil(n: Float):Int return Math.ceil( n );
+  public static inline function pow(n:Float, exp:Float):Float return Math.pow(n, exp);
+
   static public function angleDifference(a : Float, b : Float, ?turn : Float = 360.0) {
     var r = (b - a) % turn;
     if (r < 0)
@@ -48,6 +52,14 @@ class Floats {
     if (r > turn / 2)
       r -= turn;
     return r;
+  }
+
+  public inline static function toPrecision(n:Float, precision:Int = 2):Float {
+      return (
+          Std.int( n ) + 
+          Std.int((n - Std.int( n  )) * pow(10, precision)) /
+          pow(10, precision)
+     );
   }
 
   static public function ceilTo(f : Float, decimals : Int) : Float {
@@ -206,3 +218,5 @@ class FloatIterables {
 }
 
 typedef HaxeMath = Math;
+typedef HaxeInt64s = haxe.Int64;
+typedef PmInt64s = pm.Int64s;

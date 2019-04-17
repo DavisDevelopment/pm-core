@@ -85,7 +85,7 @@ class Future<Val, Err> {
 
     public function handle(cb: Callback<Outcome<Val, Err>>):Future<Val, Err> {
         var done = (x -> cb.invoke( x )).once();
-        then(
+        inline then(
             done.compose((v: Val) -> Outcome.Success( v )),
             done.compose((e: Err) -> Outcome.Failure( e ))
         );
@@ -126,6 +126,23 @@ class Future<Val, Err> {
                         exit.invoke(Outcome.Failure( x ));
                 }
             });
+        });
+    }
+
+    /**
+      obtain a Promise for the Outcome<Val, Err> of [this] Future
+     **/
+    public function outcome():Promise<Outcome<Val, Err>> {
+        return new Promise<Outcome<Val, Err>>(function(resolve) {
+            handle(function(o: Outcome<Val, Err>) {
+                resolve( o );
+            });
+        });
+    }
+
+    public static inline function ofOutcomePromise<Val, Err>(prom: Promise<Outcome<Val, Err>>):Future<Val, Err> {
+        return new Future<Val, Err>(function(res: Callback<Outcome<Val, Error>>) {
+            prom.handle( res );
         });
     }
 }
