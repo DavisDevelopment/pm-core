@@ -1,7 +1,5 @@
 package pm.map;
 
-import haxe.Constraints.IMap;
-
 using pm.Iterators;
 
 /**
@@ -31,7 +29,7 @@ using pm.Iterators;
 @:forward 
 abstract Dictionary<V>(DictionaryType<V>) to DictionaryType<V> from DictionaryType<V> {
     public inline function new() {
-        this = new DictionaryType();
+        this = new DictionaryType<V>();
     }
     
     @:arrayAccess 
@@ -147,7 +145,8 @@ private class DictionaryType<V> {
     }
 
     public function keyValueIterator() {
-        return keys().map(x -> {key:x, value:get(x)});
+        //return keys().map(x -> {key:x, value:get(x)});
+        return new DictionaryKeyValueIterator<V>( this );
     }
     
     public inline function keys():Iterator<String> {
@@ -190,8 +189,9 @@ private class DictionaryType<V> {
     private inline function get_length():Int return arr.length;
 
 /* === Fields === */
-    private var arr:Array<String>;
-    private var map:Map<String,V>;
+
+    private var arr: Array<String>;
+    private var map: Map<String,V>;
 }
 
 private class DictionaryIterator<V> {
@@ -212,25 +212,20 @@ private class DictionaryIterator<V> {
     }
 }
 
+private class DictionaryKeyValueIterator<V> {
+    public var o: Dictionary<V>;
+    public var it: Iterator<String>;
+    public inline function new(o: Dictionary<V>) {
+        this.o = o;
+        this.it = o.keys();
+    }
 
-//private class DictionaryPairIterator<V> {
-    //public var obj:Dictionary<V>;
-    //public var it:Iterator<String>;
-    
-    //public inline function new(obj:Dictionary<V>) {
-        //this.obj = obj;
-        //this.it = obj.keys();
-    //}
-    
-    //public inline function hasNext():Bool
-    //{
-        //return it.hasNext();
-    //}
-    
-    //public inline function next():Pair<String,V>
-    //{
-        //var k:String = it.next();
-        //return Pair.of(k, obj.get(k));
-    //}
-//}
-
+    public inline function hasNext() return it.hasNext();
+    public inline function next() {
+        var k = it.next();
+        return {
+            key: k,
+            value: o[k]
+        };
+    }
+}

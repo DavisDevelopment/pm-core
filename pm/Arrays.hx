@@ -41,14 +41,16 @@ class Arrays {
      **/
     public static function blit<T>(src:Array<T>, srcPos:Int, dst:Array<T>, dstPos:Int, n:Int) {
         if (n > 0) {
-            //assert(srcPos < src.length, "srcPos out of range");
-            //assert(dstPos < dst.length, "dstPos out of range");
+            assert(srcPos < src.length, "srcPos out of range");
+            assert(dstPos < dst.length, "dstPos out of range");
             //assert(srcPos + n <= src.length && dstPos + n <= dst.length, "n out of range");
 
             #if cpp
+
                 cpp.NativeArray.blit(dst, dstPos, src, srcPos, n);
 
             #else
+
             if (src == dst) {
                 if (srcPos < dstPos) {
                     var i = srcPos + n;
@@ -91,6 +93,44 @@ class Arrays {
             }
             #end
         }
+    }
+
+    public static inline function has<T>(a:Array<T>, x:T):Bool {
+        return a.indexOf( x ) != -1;
+    }
+
+    public static function fill<T>(a:Array<T>, v:T) {
+        #if js
+        if (untyped js.Syntax.code('Array.prototype.fill'))
+            untyped a.fill( v );
+        return ;
+        #end
+
+        for (i in 0...a.length)
+            a[i] = v;
+        return ;
+    }
+
+    public static function nullify<T>(a: Array<T>) {
+        fill(a, null);
+    }
+
+    /**
+      TODO implement `append` using `blit`
+     **/
+    public static function append<T>(a:Array<T>, b:Array<T>) {
+        for (x in b)
+            a.push( x );
+        //a.resize(a.length + b.length);
+        //var i = a.length;
+        //while ((i - a.length) <= b.length) {
+            //a[i] = b[i - a.length];
+            //++i;
+        //}
+        //for (i in 0...b.length) {
+            //a[a.length + i] = b[i];
+        //}
+        //return a;
     }
 
     #if js inline #end
@@ -153,21 +193,21 @@ class Arrays {
             return true;
         #end
     }
-    //#if js inline #end
-    //public static function al<T>(a:Array<T>, fn:T->Bool):Bool {
-        //#if js
-        //untyped {
-            //return a.each( fn );
-        //}
-        //#else
-        //for (x in a)
-            //if (!fn( x ))
-                //return false;
-        //return true;
-        //#end
-    //}
 
-
+    #if js inline #end
+    public static function flatMap<I, O>(a:Array<I>, fn:I -> Array<O>):Array<O> {
+        #if js 
+            untyped {
+                return a.flatMap( fn );
+            }
+        #else
+            var o = [];
+            for (x in a) {
+                var chnk = fn( x );
+                append(o, chnk);
+            }
+            return o;
+    }
 
     public static function chunk<T>(array:Array<T>, size:Int):Array<Array<T>> {
         var chunks = [];//alloc(Math.floor((array.length + 0.0) / size));

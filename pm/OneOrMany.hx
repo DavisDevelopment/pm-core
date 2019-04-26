@@ -2,6 +2,9 @@ package pm;
 
 import haxe.macro.Expr;
 
+using pm.Arrays;
+using pm.Functions;
+
 @:forward(length, iterator, keyValueIterator)
 abstract OneOrMany<T> (Array<T>) from Array<T> to Array<T> {
     public inline function isOne():Bool {
@@ -29,6 +32,10 @@ abstract OneOrMany<T> (Array<T>) from Array<T> to Array<T> {
 
     public inline function map<O>(fn: T -> O):OneOrMany<O> {
         return many(this.map( fn ));
+    }
+
+    public function flatMap<O>(m: T->OneOrMany<O>):OneOrMany<O> {
+        return many<O>(this.flatMap(item -> m(item).asMany()));
     }
 
     @:op( a.b )

@@ -1,15 +1,22 @@
 package pm;
 
+import pm.Pair;
+import pm.tree.TreeItr;
+
 import haxe.ds.Option;
 
+import pm.Numbers.Floats.*;
+
+import Slambda.fn;
+
+using Lambda;
+using StringTools;
 using pm.Arrays;
 using pm.Iterators;
 using pm.Functions;
 using pm.Options;
+using pm.Numbers;
 
-/**
-  
- **/
 class AVLTree<Key, Value> {
     /* Constructor Function */
     public function new(?options: AVLTreeOptions<Key, Value>):Void {
@@ -26,7 +33,7 @@ class AVLTree<Key, Value> {
                     return Reflect.compare(x, y);
                 });
             }
-            model = TreeModel.create(options.compareKeys, options.checkValueEquality);
+            model = AVLTreeModel.create(options.compareKeys, options.checkValueEquality);
         }
 
         if (options.data != null) {
@@ -41,14 +48,14 @@ class AVLTree<Key, Value> {
     /**
       compare two keys to each other
      **/
-    function compareKeys(a:Key, b:Key):Int {
+    inline function compareKeys(a:Key, b:Key):Int {
         return model.compareKeys(a, b);
     }
 
     /**
       check for equality between two values
      **/
-    function checkValueEquality(a:Value, b:Value):Bool {
+    inline function checkValueEquality(a:Value, b:Value):Bool {
         return model.checkValueEquality(a, b);
     }
 
@@ -56,13 +63,6 @@ class AVLTree<Key, Value> {
       the values between two boundaries
      **/
     public function betweenBounds(?min:BoundingValue<Key>, ?max:BoundingValue<Key>):Array<Value> {
-        //if (root == null)
-            //return [];
-
-        //return _betweenBounds({
-            //lower: n2o( min ),
-            //upper: n2o( max )
-        //}, root);
         return _betweenBounds_({
             lower: min, // must be greater than...
             upper: max  // must be less than...
@@ -78,21 +78,15 @@ class AVLTree<Key, Value> {
         ubm = ubm != null ? ubm : getUpperBoundMatcher( query.upper );
 
         if (lbm( root.key ) && root.left != null) {
-            Utils.Arrays.append(res, _betweenBounds_(query, lbm, ubm, root.left));
-            //for (x in _betweenBounds_(query, lbm, ubm, root.left, res))
-                //res.push( x );
+            Arrays.append(res, _betweenBounds_(query, lbm, ubm, root.left));
         }
 
         if (lbm( root.key ) && ubm( root.key )) {
-            Utils.Arrays.append(res, root.data);
-            //for (x in root.data)
-                //res.push( x );
+            Arrays.append(res, root.data);
         }
 
         if (ubm( root.key ) && root.right != null) {
-            Utils.Arrays.append(res, _betweenBounds_(query, lbm, ubm, root.right));
-            //for (x in _betweenBounds_(query, lbm, ubm, root.right, res))
-                //res.push( x );
+            Arrays.append(res, _betweenBounds_(query, lbm, ubm, root.right));
         }
 
         return res;
@@ -182,7 +176,7 @@ class AVLTree<Key, Value> {
         }
 
         // update height and rebalance tree
-        root.height = Math.max(root.leftHeight(), root.rightHeight()) + 1;
+        root.height = max(root.leftHeight(), root.rightHeight()) + 1;
         var balanceState:BalanceState = root.getBalanceState();
         
         if (balanceState.equals(UnbalancedLeft)) {
@@ -274,7 +268,7 @@ class AVLTree<Key, Value> {
         }
 
         // update height and rebalance tree
-        root.height = Math.max(root.leftHeight(), root.rightHeight()) + 1;
+        root.height = max(root.leftHeight(), root.rightHeight()) + 1;
         var balanceState = root.getBalanceState();
 
         if (balanceState.equals(UnbalancedLeft)) {
@@ -435,8 +429,7 @@ class AVLTree<Key, Value> {
     /**
       iterator for all Nodes
      **/
-    public function nodes():TreeItr<Key, Value> /*Iterator<AVLTreeNode<Key, Value>>*/ {
-        //return _nodes( root );
+    public function nodes():TreeItr<Key, Value> {
         return new TreeItr( this );
     }
 
@@ -444,7 +437,7 @@ class AVLTree<Key, Value> {
       iterator for all keys
      **/
     public function keys():Iterator<Key> {
-        return _mapnodes(root, n -> n.key);
+        return _mapnodes(root, fn(_.key));
     }
 
     /**
@@ -452,7 +445,8 @@ class AVLTree<Key, Value> {
      **/
     public function values():Iterator<Value> {
         return nodes().reduce(function(acc:Array<Value>, node:Node<Key, Value>):Array<Value> {
-            return Utils.Arrays.append(acc, node.data);
+            Arrays.append(acc, node.data);
+            return acc;
         }, new Array()).iterator();
     }
 
@@ -540,7 +534,7 @@ class AVLTree<Key, Value> {
     // the root node
     public var root(default, null): Null<AVLTreeNode<Key, Value>>;
 
-    private var model(default, null): TreeModel<Key, Value>;
+    private var model(default, null): AVLTreeModel<Key, Value>;
 
     // the total size of [this] tree
     private var _size(default, null): Int;
@@ -586,8 +580,8 @@ class AVLTreeNode<Key, T> {
         var other = left;
         left = other.right;
         other.right = this;
-        height = Math.max(leftHeight(), rightHeight()) + 1;
-        other.height = Math.max(leftHeight(), height) + 1;
+        height = max(leftHeight(), rightHeight()) + 1;
+        other.height = max(leftHeight(), height) + 1;
         return other;
     }
 
@@ -595,8 +589,8 @@ class AVLTreeNode<Key, T> {
         var other = right;
         right = other.left;
         other.left = this;
-        height = Math.max(leftHeight(), rightHeight()) + 1;
-        other.height = Math.max(leftHeight(), height) + 1;
+        height = max(leftHeight(), rightHeight()) + 1;
+        other.height = max(leftHeight(), height) + 1;
         return other;
     }
 
@@ -642,12 +636,11 @@ typedef AVLTreeOptions<K, V> = {
     ?unique: Bool,
     ?compareKeys: K->K->Int,
     ?checkValueEquality: V->V->Bool,
-    ?model: TreeModel<K, V>,
+    ?model: AVLTreeModel<K, V>,
     ?data: Array<{key: K, value: V}>
 }
 
 enum BoundingValue<T> {
-    Edge(v: T);
-    Inclusive(v: T);
+    Edge(value: T);
+    Inclusive(value: T);
 }
-

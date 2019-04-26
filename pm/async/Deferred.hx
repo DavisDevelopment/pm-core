@@ -46,9 +46,14 @@ abstract Deferred<Val, Err> (IDeferred<Val, Err>) from IDeferred<Val, Err> to ID
         return new SyncDeferred( res );
     }
 
+    public static inline function lazyResolution<V, E>(res: Lazy<DeferredResolution<V, E>>):Deferred<V, E> {
+        return new SyncDeferred(res.get());
+    }
+
     public static inline function result<T, E>(v: T):Deferred<T, E> {
         return resolution(Result( v ));
     }
+
     public static inline function exception<T, E>(e: E):Deferred<T, E> {
         return resolution(Exception( e ));
     }

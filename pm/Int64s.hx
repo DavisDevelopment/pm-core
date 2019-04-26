@@ -21,11 +21,11 @@ class Int64s {
     return compare(value, Int64.ofInt(0)) > 0 ? value : -value;
 
   public static function compare(a:Int64, b:Int64):Int {
-#if cpp
-    return a > b ? 1 : (a < b ? -1 : 0);
-#else
-    return haxe.Int64.compare(a, b);
-#end
+        #if cpp
+            return a > b ? 1 : (a < b ? -1 : 0);
+        #else
+            return haxe.Int64.compare(a, b);
+        #end
   }
 
   public static function parse(s : String) : Int64 {

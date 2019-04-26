@@ -35,6 +35,10 @@ abstract Promise<T> (TProm<T>) from TProm<T> to TProm<T> {
     public static inline function make<T>(d: Deferred<T, Dynamic>):Promise<T> {
         return new TProm<T>( d );
     }
+
+    public static inline function resolve<T>(value: T):Promise<T> {
+        return new TProm<T>(Deferred.result( value ));
+    }
 }
 
 typedef TProm<T> = pm.async.Future<T, Dynamic>;

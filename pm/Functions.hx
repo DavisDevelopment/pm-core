@@ -1,5 +1,14 @@
 package pm;
 
+import haxe.Constraints.Function;
+
+#if macro
+import haxe.macro.Expr;
+import pm.macro.SlambdaMacro;
+#end
+
+using pm.Arrays;
+
 class Functions {
     public static function identity<T>(value: T):T {
         return value;
@@ -7,6 +16,17 @@ class Functions {
 
     public static function noop():Void {
         // betty
+    }
+
+    public static macro function fn(fn:ExprOf<Function>, rest:Array<Expr>) {
+        return SlambdaMacro.f(fn, rest);
+    }
+
+    @:noUsing
+    public static macro function compose(args: Array<Expr>) {
+        return args.reduce(function(out:Expr, arg:Expr):Expr {
+            return macro Monads.compose($out, ${SlambdaMacro.f(arg, [])});
+        }, SlambdaMacro.f(args.shift(), []));
     }
 }
 

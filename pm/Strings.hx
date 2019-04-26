@@ -20,6 +20,56 @@ class Strings {
         return s.substring(s.indexOf(del) + del.length);
     }
 
+    public static inline function capitalize(s: String):String {
+        return s.charAt(0).toUpperCase() + s.substring(1).toLowerCase();
+    }
+
+    public static inline function isUpperCase(s: String):Bool {
+        return !~/[^A-Z]/.match( s );
+    }
+    public static inline function isLowerCase(s: String):Bool {
+        return !~/[^a-z]/.match( s );
+    }
+
+    public static function camelCaseWords(s:String) {
+        var words:Array<String> = new Array();
+        var word:String = '';
+
+        for (i in 0...s.length) {
+            var c = s.charAt( i );
+            if (isUpperCase( c )) {
+                words.push( word  );
+                word = c.toLowerCase();
+            }
+            else {
+                word += c;
+            }
+        }
+
+        if (!empty( word )) {
+            words.push( word  );
+        }
+
+        return words;
+    }
+
+    public static function kebabCaseWords(s:String, sep:String = '-') {
+        var words = [];
+        var pat = new EReg(sep.split('').map(x -> '[$x]').join(''), '');
+        return pat.split( s );
+    }
+    public static function snakeCaseWords(s: String) {
+        return kebabCaseWords(s, '_');
+    }
+
+    public static function toPascalCase(s:String, sep:String = '-'):String {
+        return StringArrays.pascalCase(kebabCaseWords(s, sep));
+    }
+
+    public static function toCamelCase(s:String, sep:String = '-'):String {
+        return StringArrays.camelCase(kebabCaseWords(s, sep));
+    }
+
     public static function lstrip(s:String, ?del:String):String {
         return switch del {
             case null: s.ltrim();
@@ -36,9 +86,9 @@ class Strings {
 
     public static function trimCharsLeft(s:String, charlist:String):String {
         #if (php && haxe_ver>=4.0)
-        return untyped php.Global.ltrim(value,charlist);
+        return untyped php.Global.ltrim(s,charlist);
         #elseif (php && haxe_ver<4.0)
-        return untyped __call__("ltrim", value, charlist);
+        return untyped __call__("ltrim", s, charlist);
         #else
 
         var pos = 0;
@@ -51,6 +101,26 @@ class Strings {
             }
         }
         return s.substring(pos);
+        #end
+    }
+
+    public static function trimCharsRight(s:String, charlist:String):String {
+        #if (php && haxe_ver>=4.0)
+            return untyped php.Global.rtrim(s, charlist);
+        #elseif (php && haxe_ver<4.0)
+            return untyped __call__("rtrim", s, charlist);
+        #else
+            var pos = s.length;
+            var idx = s.length;
+            while (--idx >= 0) {
+                if (has(charlist, s.charAt(idx))) {
+                    pos--;
+                }
+                else {
+                    break;
+                }
+            }
+            return s.substring(0, pos);
         #end
     }
 
@@ -122,6 +192,15 @@ class Strings {
 	private static var _urlEncode = neko.Lib.load("std","url_encode",1);
 	private static var _urlDecode = neko.Lib.load("std","url_decode",1);
 	#end
+}
+
+class StringArrays {
+    public static function pascalCase(words:Array<String>):String {
+        return words[0].toLowerCase()+words.slice(1).map(x -> Strings.capitalize(x)).join('');
+    }
+    public static function camelCase(words: Array<String>):String {
+        return words.map(Strings.capitalize).join('');
+    }
 }
 
 typedef Strs = StringTools;

@@ -15,6 +15,7 @@ import haxe.macro.Expr;
 import haxe.macro.Context;
 
 import Type.ValueType;
+import pm.Numbers.Floats.min;
 
 import Std.is as isType;
 import Reflect.*;
@@ -229,39 +230,34 @@ class Arch {
       numerically compare the two given values
       [= this is gonna get ugly.. =]
      **/
-    /*
     public static function compareThings(a:Dynamic, b:Dynamic):Int {
         // null
         if (a == null) return b == null ? 0 : -1;
         if (b == null) return a == null ? 0 :  1;
 
         // numbers
-        if (isNumber(a)) return isNumber(b) ? compareNumbers(a, b) : -1;
-        if (isNumber(b)) return isNumber(a) ? compareNumbers(a, b) :  1;
+        if (isFloat(a)) return isFloat(b) ? compareNumbers(a, b) : -1;
+        if (isFloat(b)) return isFloat(a) ? compareNumbers(a, b) :  1;
 
         // strings
-        if (a.is_string()) return b.is_string() ? compareStrings(a, b) : -1;
-        if (b.is_string()) return a.is_string() ? compareStrings(a, b) :  1;
+        if (isString(a)) return isString(b) ? compareStrings(a, b) : -1;
+        if (isString(b)) return isString(a) ? compareStrings(a, b) :  1;
 
         // booleans
-        if (a.is_boolean()) return b.is_boolean() ? compareBooleans(a, b) : -1;
-        if (b.is_boolean()) return a.is_boolean() ? compareBooleans(a, b) :  1;
+        if (isBool(a)) return isBool(b) ? compareBooleans(a, b) : -1;
+        if (isBool(b)) return isBool(a) ? compareBooleans(a, b) :  1;
 
         // dates
-        if (a.is_date()) return b.is_date() ? compareDates(a, b) : -1;
-        if (b.is_date()) return a.is_date() ? compareDates(a, b) :  1;
+        if (isDate(a)) return isDate(b) ? compareDates(a, b) : -1;
+        if (isDate(b)) return isDate(a) ? compareDates(a, b) :  1;
 
         // arrays
-        if (a.is_uarray()) return b.is_uarray() ? compareArrays(a, b) : -1;
-        if (b.is_uarray()) return a.is_uarray() ? compareArrays(a, b) :  1;
+        if (isArray(a)) return isArray(b) ? compareArrays(a, b) : -1;
+        if (isArray(b)) return isArray(a) ? compareArrays(a, b) :  1;
 
-        // objects (with some interfaces)
-        if ((a is IComparable<Dynamic>))
-            return b.sametypeas( a ) ? (cast a : IComparable<Dynamic>).compareTo(cast b) : -1;
-        
         // anonymous objects
-        if (a.is_anon()) return b.is_anon() ? compareObjects(a, b) : -1;
-        if (b.is_anon()) return a.is_anon() ? compareObjects(a, b) :  1;
+        if (isObject( a )) return isObject(b) ? compareObjects(a, b) : -1;
+        if (isObject( b )) return isObject(a) ? compareObjects(a, b) :  1;
 
         // should never be reached
         return compareObjects(a, b);
@@ -306,18 +302,16 @@ class Arch {
             return compareThings(a, b);
         });
     }
-    */
 
     /**
       compare two EnumValue values
      **/
-    /*
     public static function compareEnumValues<E:EnumValue>(a:E, b:E):Int {
         var comp:Int = compareNumbers(a.getIndex(), b.getIndex());
-        if (comp != 0) return comp;
+        if (comp != 0) 
+            return comp;
         return compareArrays(a.getParameters(), b.getParameters());
     }
-    */
 
     /**
       compare two Date instances
