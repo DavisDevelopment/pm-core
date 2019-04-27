@@ -56,15 +56,14 @@ abstract Byte (Int) from Int to Int {
 	  * Tests whether [this] Byte would be a number in String form
 	  */
 	public inline function isNumeric():Bool {
-	    return M.inRange(this, 48, 57);
-		//return (this >= 48 && this <= 57);
+	    return this.inRange(48, 57);
 	}
 
 	/**
 	  * Tests whether [this] Byte would be a letter in String form
 	  */
 	public inline function isLetter():Bool {
-	    return this.inRange(65, 90) || this.inRange(97, 122));
+	    return this.inRange(65, 90) || this.inRange(97, 122);
 	}
 
 	/**
@@ -91,7 +90,11 @@ abstract Byte (Int) from Int to Int {
 	  */
 	public inline function isWhiteSpace():Bool {
 		//return Lambda.has([9, 10, 11, 12, 13, 32], asint);
-		return (isAny(9, 10, 11, 12, 13, 32));
+		//return (isAny(9, 10, 11, 12, 13, 32));
+		return switch this {
+            case 9, 10, 11, 12, 13, 32: true;
+            default: false;
+		}
 	}
 
 	/**
@@ -109,7 +112,11 @@ abstract Byte (Int) from Int to Int {
 			//33, 44, 45, 46,
 			//58, 59, 53
 		//], asint);
-		return isAny(33, 44, 45, 46, 58, 59, 53);
+		//return isAny(33, 44, 45, 46, 58, 59, 53);
+		return switch this {
+            case 33, 44, 45, 46, 58, 59, 53: true;
+            default: false;
+		}
 	}
 
 	/**
@@ -147,24 +154,24 @@ abstract Byte (Int) from Int to Int {
 
 	public macro function equalsChar(self:ExprOf<Byte>, c:ExprOf<String>):ExprOf<Bool> {
 		var i : ExprOf<Int>;
-		if (c.isConstant()) {
-			i = macro $c.code;
-		}
-		else {
-			i = macro $c.charCodeAt( 0 );
+		switch c.expr {
+            case ExprDef.EConst(Constant.CString(_)):
+                i = macro $c.code;
+            default:
+                i = macro $c.charCodeAt( 0 );
 		}
 		return macro ($self == $i);
 	}
 
 	public macro function ec(self:ExprOf<Byte>, c:ExprOf<String>):ExprOf<Bool> {
-	    var i:ExprOf<Int>;
-	    if (c.isConstant()) {
-	        i = macro $c.code;
-	    }
-        else {
-            i = macro StringTools.fastCodeAt($c, 0);
-        }
-        return macro ($self == $i);
+        var i : ExprOf<Int>;
+		switch c.expr {
+            case ExprDef.EConst(Constant.CString(_)):
+                i = macro $c.code;
+            default:
+                i = macro $c.charCodeAt( 0 );
+		}
+		return macro ($self == $i);
 	}
 
 	public macro function isAny(self:ExprOf<Byte>, rest:Array<Expr>):ExprOf<Bool> {
@@ -190,6 +197,7 @@ abstract Byte (Int) from Int to Int {
                     throw 'Error: Unexpected ${e}';
 	        }
 	    }
+
 	    inline function expr(e:ExprDef):Expr return {pos:Context.currentPos(),expr:e};
 	    function or(i : Array<Expr>):Expr {
 	        return expr(EBinop(Binop.OpBoolOr, i.shift(), (i.length>=2?or(i):i.shift())));

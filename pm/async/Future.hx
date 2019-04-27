@@ -141,8 +141,10 @@ class Future<Val, Err> {
     }
 
     public static inline function ofOutcomePromise<Val, Err>(prom: Promise<Outcome<Val, Err>>):Future<Val, Err> {
-        return new Future<Val, Err>(function(res: Callback<Outcome<Val, Error>>) {
-            prom.handle( res );
+        return new Future<Val, Err>(function(res: Callback<Outcome<Val, Err>>) {
+            prom.then(function(o: Outcome<Val, Err>) {
+                res.invoke( o );
+            });
         });
     }
 }

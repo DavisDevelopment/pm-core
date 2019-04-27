@@ -1,6 +1,7 @@
 package pm;
 
 import haxe.io.Error as IOError;
+import pm.Assert.assert;
 
 #if cpp
 import cpp.NativeArray;
@@ -207,6 +208,7 @@ class Arrays {
                 append(o, chnk);
             }
             return o;
+        #end
     }
 
     public static function chunk<T>(array:Array<T>, size:Int):Array<Array<T>> {
