@@ -8,6 +8,8 @@ import pm.async.Callback;
 import pm.async.Deferred;
 import pm.async.Future;
 
+using pm.Functions;
+
 @:forward
 abstract Promise<T> (TProm<T>) from TProm<T> to TProm<T> {
     public inline function new(d: Deferred<T, Dynamic>) {
@@ -31,13 +33,27 @@ abstract Promise<T> (TProm<T>) from TProm<T> to TProm<T> {
         return this.flatMap( fn );
     }
 
+    @:to
+    public function noisify():Promise<Noise> {
+        return map(x -> Noise);
+    }
+
     @:from
     public static inline function make<T>(d: Deferred<T, Dynamic>):Promise<T> {
         return new TProm<T>( d );
     }
 
+    @:from
+    public static function flatten<T>(p: Promise<Promise<T>>):Promise<T> {
+        return p.flatMap( Functions.identity );
+    }
+
     public static inline function resolve<T>(value: T):Promise<T> {
         return new TProm<T>(Deferred.result( value ));
+    }
+
+    public static inline function reject<T>(value: Dynamic):Promise<T> {
+        return new TProm<T>(Deferred.exception( value ));
     }
 }
 

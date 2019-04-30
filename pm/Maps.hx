@@ -7,6 +7,7 @@ using pm.Iterators;
 using pm.Functions;
 
 class Maps {
+    @:generic
     public static function clone<K, V>(m: IMap<K, V>, ck:K->K, cv:V->V):IMap<K, V> {
         return [for (k=>v in m) ck(k)=>cv(v)];
     }
@@ -16,6 +17,6 @@ class Maps {
         return [for (k=>v in m) {
             var p = pred(new Pair(k, v));
             p.left => p.right;
-        };];
+        }];
     }
 }
