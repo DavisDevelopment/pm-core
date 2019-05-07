@@ -26,6 +26,24 @@ class Iterators {
         return new MappedIterator(it, fn);
     }
 
+    public static function filter<T>(it:Iterator<T>, fn:T -> Bool):Iterator<T> {
+        return flatMap(it, function(item: T) {
+            if (fn( item )) {
+                return new SingleIterator<T>( item );
+            }
+            else {
+                return new EmptyIterator<T>();
+            }
+        });
+    }
+
+    public static function array<T>(it:Iterator<T>):Array<T> {
+        return reduce(it, function(arr:Array<T>, el:T) {
+            arr.push( el );
+            return arr;
+        }, new Array<T>());
+    }
+
     public static inline function append<T>(a:Iterator<T>, b:Iterator<T>):Iterator<T> {
         return IteratorIterator.of([a, b]);
     }
