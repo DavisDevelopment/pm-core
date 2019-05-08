@@ -99,11 +99,14 @@ class StreamBase<Item, Quality> implements StreamObject<Item, Quality> {
     }
 
     public function blend(other: Stream<Item, Quality>):Stream<Item, Quality> {
+        throw 'Not Implemented';
+        /*
         return
             if ( depleted )
                 other;
             else
                 new BlendStream(this, other);
+        */
     }
 
     public var depleted(get, never):Bool;

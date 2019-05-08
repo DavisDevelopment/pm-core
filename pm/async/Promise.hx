@@ -8,6 +8,8 @@ import pm.async.Callback;
 import pm.async.Deferred;
 import pm.async.Future;
 
+import pm.Functions.fn as mfn;
+
 using pm.Functions;
 
 @:forward
@@ -31,6 +33,12 @@ abstract Promise<T> (TProm<T>) from TProm<T> to TProm<T> {
 
     public inline function flatMap<O>(fn: T -> Promise<O>):Promise<O> {
         return this.flatMap( fn );
+    }
+
+    public function derive<O>(fn:(root:Promise<T>, accept:O->Void, reject:Dynamic->Void)->Void):Promise<O> {
+        var dd = Deferred.create();
+        fn(this, mfn(dd.done(_)), mfn(dd.fail(_)));
+        return Promise.make( dd );
     }
 
     @:to

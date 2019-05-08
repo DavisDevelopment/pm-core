@@ -17,6 +17,8 @@ import haxe.ds.Either;
 import haxe.Constraints.Function;
 import haxe.extern.EitherType;
 
+import pm.async.Stream;
+
 using pm.Arrays;
 using pm.Iterators;
 using pm.Functions;
@@ -50,8 +52,6 @@ class Feed<Item, Quality> {
     }
 
     public function post(post: FeedPost<Item, Quality>):Feed<Item, Quality> {
-        //push(FeedToken.Post( post ));
-        //return this;
         return add(Post( post ));
     }
 
@@ -123,7 +123,7 @@ class Feed<Item, Quality> {
       get a Promise for the next token in [this] Feed
      **/
     public function pop():Next<FeedToken<Item, Quality>> {
-        if (buffer.hasContent()) {
+        if (!buffer.empty()) {
             var tk = buffer.shift();
             switch tk {
                 case null: throw 'assert';
@@ -162,7 +162,7 @@ class Feed<Item, Quality> {
       defer [f] to the next execution stack
      **/
     public static inline function defer(f: Void->Void):Void {
-        Callback.
+        Callback.defer( f );
     }
 
     /**

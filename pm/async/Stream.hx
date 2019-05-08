@@ -10,6 +10,8 @@ import pm.async.Promise;
 import pm.Outcome;
 import pm.Error;
 import pm.async.Stream;
+import pm.async.StreamBase;
+import pm.async.Feed;
 
 import haxe.ds.Option;
 import haxe.ds.Either;
@@ -62,6 +64,18 @@ abstract Stream<Item, Quality> (StreamObject<Item, Quality>) from StreamObject<I
         return new ErrorStream( e );
     }
 
+    @:from
+    public static function generator<I, Q>(fn: GenFn<I, Q>):Stream<I, Q> {
+        return Generator.stream( fn );//function() {
+            /*return fn().flatMap(function(step: Step<I, Q>) {
+                return switch step {
+                    case Link(v, rest): 
+                }
+            })
+            */
+        //});
+    }
+
     public static function ofIterator<I, Q>(i: Iterator<I>):Stream<I, Q> {
         return Generator.stream(function next(step) {
             if (i.hasNext()) {
@@ -76,6 +90,7 @@ abstract Stream<Item, Quality> (StreamObject<Item, Quality>) from StreamObject<I
 /* === Casting === */
 }
 
+@:forward
 abstract RealStream<T> (Stream<T, Dynamic>) to Stream<T, Dynamic> {
     private inline function new(i: StreamObject<T, Dynamic>) {
         this = i;
@@ -225,8 +240,12 @@ class NextStream<I, Q> extends StreamBase<I, Q> {
     }
 }
 
+/**
+ Generator stream object
+**/
 class Generator<Item, Quality> extends StreamBase<Item, Quality> {
     var upcoming: Next<Step<Item, Quality>>;
+    
     public function new(upcoming) {
         this.upcoming = upcoming;
     }
@@ -267,8 +286,28 @@ class Generator<Item, Quality> extends StreamBase<Item, Quality> {
         });
     }
 
-    public static function stream<I, Q>(step:(Step<I,Q>->Void)->Void) {
-        return new Generator(Next.async(step));
+    public static function stream<I, Q>(step: GenFn<I, Q>/*(Step<I, Q> -> Void) -> Void*/) {
+        return new Generator(step.next());
+    }
+}
+
+private typedef TGenFn<I, Q> = (next:(step:Step<I, Q>)->Void)->Void;
+abstract GenFn<I, Q>(TGenFn<I, Q>) from TGenFn<I, Q> to TGenFn<I, Q> {
+    @:to
+    public inline function next():Next<Step<I, Q>> {
+        return Next.async( this );
+    }
+
+    @:from
+    public static inline function plainNext<I, Q>(fn: Void -> Next<Step<I, Q>>):GenFn<I, Q> {
+        return function(next) {
+            fn().then(next, e -> throw e);
+        }
+    }
+
+    @:from
+    public static inline function plain<I, Q>(fn: Void->Step<I, Q>):GenFn<I, Q> {
+        return plainNext(() -> Next.sync(fn()));
     }
 }
 
@@ -297,7 +336,8 @@ class FeedStream<I, Q> extends ForwardStream<I, Q> {
                             .map(function(post: FeedPost<I, Q>) {
                                 return Stream.flatten(post.item().map.fn(Stream.single(_)));
                             })
-                            .or(Empty.make());
+                            .or(Empty.make())
+                            .getValue();
 
                     case FeedToken.Pass:
                         new FeedStream( feed );
@@ -415,8 +455,8 @@ class CloggedStream<Item> extends StreamBase<Item, Dynamic> {
     }
 }
 
+/*
 class BlendStream<Item, Q> extends Generator<Item, Q> {
-    /* Constructor Function */
     public function new(a:Stream<Item, Q>, b:Stream<Item, Q>):Void {
         var first = null;
         function wait(s: Stream<Item, Q>) {
@@ -444,6 +484,7 @@ class BlendStream<Item, Q> extends Generator<Item, Q> {
         }));
     }
 }
+*/
 
 class RegroupStream<In, Out, Q> extends CompoundStream<Out, Q> {
     public function new(source:Stream<In, Q>, f:Regrouper<In, Out, Q>, ?prev) {
@@ -461,7 +502,7 @@ class RegroupStream<In, Out, Q> extends CompoundStream<Out, Q> {
                         Finish;
 
                     case Terminated(v):
-                        ret = v.or(Empty.make);
+                        ret = v.or(Empty.make()).getValue();
                         terminated = true;
                         Finish;
 
@@ -482,9 +523,9 @@ class RegroupStream<In, Out, Q> extends CompoundStream<Out, Q> {
             case Depleted:
                 Stream.flatten(f.apply(buf, Ended).map(function(o) return switch o {
                     case Converted(v): v;
-                    case Terminated(v): v.or(Empty.make);
+                    case Terminated(v): v.or(Empty.make()).getValue();
                     case Untouched: Empty.make();
-                    case Errored(e): cast Stream.ofError(e);
+                    case Errored(e): cast Stream.ofError( e );
                 }));
 
             case Halted(_) if (terminated):
@@ -558,10 +599,19 @@ enum ReductionStep<Safety, Result> {
     Crash<Error>(e: Error): ReductionStep<Error, Result>;
 }
 
+@:using(pm.async.Stream.ReductionTools)
 enum Reduction<Item, Safety, Quality, Result> {
     Crashed<Error>(error:Error, at:Stream<Item, Quality>): Reduction<Item, Error, Quality, Result>;
     Failed<Error>(error: Error): Reduction<Item, Safety, Error, Result>;  
     Reduced(result: Result): Reduction<Item, Safety, Quality, Result>;
+}
+class ReductionTools {
+    public static function getResult<Res, A, B, C>(r: Reduction<A, B, C, Res>):Res {
+        return switch r {
+            case Reduced(result): result;
+            default: throw new pm.Error('Reduction failed. Cannot get result');
+        }
+    }
 }
 
 /**
@@ -613,12 +663,12 @@ abstract Reducer<Item, Safety, Result> (Result -> Item -> Next<ReductionStep<Saf
     public static function plain<Item, Q, Acc>(f: Acc->Item->Next<Acc>):Reducer<Item, Q, Acc> {
         return new Reducer(function(acc:Acc, item:Item) {
             return f(acc, item).derive(function(_, accept, reject) {
-                _.future().then(function(result: Result<Acc, Dynamic>) {
+                _.handle(function(result: Outcome<Acc, Dynamic>) {
                     switch result {
-                        case ResSuccess( acc ):
+                        case Success( acc ):
                             accept(Progress( acc ));
 
-                        case ResFailure( err ):
+                        case Failure( err ):
                             accept(Crash( err ));
                     }
                 });
@@ -644,11 +694,11 @@ abstract Mapping<I, O, Q> (Regrouper<I, O, Q>) to Regrouper<I, O, Q> {
     }
 
     @:from
-    public static function sync<In, Out, Error>(f: In->Result<Out, Error>):Mapping<In, Out, Error> {
+    public static function sync<In, Out, Error>(f: In->Outcome<Out, Error>):Mapping<In, Out, Error> {
         return new Mapping(Regrouper.syncNoStatus(function(inputs: Array<In>) {
             return switch f(inputs[0]) {
-                case ResSuccess(out): Converted(Stream.single(out));
-                case ResFailure(err): Errored(err);
+                case Success(out): Converted(Stream.single(out));
+                case Failure(err): Errored(err);
             }
         }));
     }
@@ -804,4 +854,19 @@ abstract Next<T> (Promise<T>) from Promise<T> to Promise<T> {
             });
         });
     }
+}
+
+interface StreamObject<Item, Quality> {
+    var depleted(get, never): Bool;
+
+    function next():Next<Step<Item, Quality>>;
+    function forEach<Safety>(handler: Handler<Item, Safety>):Next<Conclusion<Item, Safety, Quality>>;
+    function decompose(into: Array<Stream<Item, Quality>>):Void;
+    function append(other: Stream<Item, Quality>):Stream<Item, Quality>;
+    function prepend(other: Stream<Item, Quality>):Stream<Item, Quality>;
+    function regroup<Ret>(regrouper: Regrouper<Item, Ret, Quality>):Stream<Ret, Quality>;
+    function map<Out>(m: Mapping<Item, Out, Quality>):Stream<Out, Quality>;
+    function filter(f: Filter<Item, Quality>):Stream<Item, Quality>;
+    function reduce<Safety, Acc>(initial:Acc, reducer:Reducer<Item, Safety, Acc>):Next<Reduction<Item, Safety, Quality, Acc>>;
+    function blend(other: Stream<Item, Quality>):Stream<Item, Quality>;
 }
