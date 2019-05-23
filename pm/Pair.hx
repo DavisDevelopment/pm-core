@@ -8,4 +8,8 @@ class Pair<A, B> {
         left = a;
         right = b;
     }
+
+    public function toString():String {
+        return 'Pair($left, $right)';
+    }
 }

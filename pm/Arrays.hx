@@ -97,7 +97,11 @@ class Arrays {
     }
 
     public static inline function has<T>(a:Array<T>, x:T):Bool {
+        #if (js && js_es >= 6)
+        return untyped a.includes(x);
+        #else
         return a.indexOf( x ) != -1;
+        #end
     }
 
     public static function fill<T>(a:Array<T>, v:T) {
@@ -162,7 +166,7 @@ class Arrays {
     #if js inline #end
     public static function reduceInit<T>(a:Array<T>, fn:T->T->T):Null<T> {
         #if js
-        return untyped a.reduce(fn, agg);
+        return untyped a.reduce(fn);
         #else
         var agg = a.shift();
         if (agg == null) return null;
