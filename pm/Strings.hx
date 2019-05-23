@@ -16,10 +16,16 @@ class Strings {
         return s.substring(0, s.indexOf( del ));
     }
 
+    public static inline function beforeLast(s:String, del:String):String {
+        return s.substring(0, s.lastIndexOf( del ));
+    }
+
     public static inline function after(s:String, del:String):String {
         return s.substring(s.indexOf(del) + del.length);
     }
-
+    public static inline function afterLast(s:String, del:String):String {
+        return s.substring(s.lastIndexOf(del) + del.length);
+    }
     public static inline function capitalize(s: String):String {
         return s.charAt(0).toUpperCase() + s.substring(1).toLowerCase();
     }
