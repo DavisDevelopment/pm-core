@@ -17,7 +17,7 @@ class Error {
 
     @:keep
     public function toString():String {
-        return switch message {
+        return '' + position + ': ' + switch message {
             case '': name;
             case _: '$name: $message';
         }
