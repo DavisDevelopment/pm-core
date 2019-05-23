@@ -28,6 +28,10 @@ class Functions {
             return macro Monads.compose($out, ${SlambdaMacro.f(arg, [])});
         }, SlambdaMacro.f(args.shift(), []));
     }
+    
+    public static function passTo<A, B>(a:A, f:A -> B):B {
+        return f(a);
+    }
 }
 
 class Nilads {
@@ -121,6 +125,10 @@ class Monads {
 
 class VMonads {
     public static function noop<T>(x: T):Void { }
+    public static inline function apply<T>(x:T, f:T->Void):T {
+        f(x);
+        return x;
+    }
 
     public static function once<T>(fn: T->Void):T->Void {
         return function(v: T) {
