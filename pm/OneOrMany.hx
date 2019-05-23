@@ -35,7 +35,7 @@ abstract OneOrMany<T> (Array<T>) from Array<T> to Array<T> {
     }
 
     public function flatMap<O>(m: T->OneOrMany<O>):OneOrMany<O> {
-        return many<O>(this.flatMap(item -> m(item).asMany()));
+        return many(this.flatMap(item -> m(item).asMany()));
     }
 
     @:op( a.b )
