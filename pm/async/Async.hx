@@ -1,6 +1,11 @@
 package pm.async;
 
+import pm.async.Stream.RealStream;
+import pm.async.Stream.Conclusion;
+import pm.async.Stream.Handled;
+import pm.async.Stream.Step;
 import pm.Functions.fn;
+import pm.async.Feed;
 
 import pm.HashKey;
 import pm.LinkedQueue;
@@ -15,9 +20,62 @@ using pm.Outcome;
 
 @:forward
 abstract Async<I, O>(AsyncObject<I, O>) from AsyncObject<I,O> to AsyncObject<I, O> {
+
+    public function map<Out>(m: Async<O, Out>):Async<I, Out> {
+        return waterfall(this, m);
+    }
+
+    public function flatMap<Out>(m: Async<O, Promise<Out>>):Async<I, Out> {
+        var mm = map( m );
+        return function(input: I):Handle<Out> {
+            return new Promise(function(yea) {
+                mm.invoke(input).then(
+                    function(res) {
+                        return yea(res);
+                    },
+                    function(err) {
+                        return yea(Failure(err));
+                    }
+                );
+            });
+        }
+    }
+
+    public static function streamMap<In, Out>(async:Async<In, Out>, stream:pm.async.Stream.RealStream<In>):pm.async.Stream.RealStream<Out> {
+        var outFeed:Feed<Out, Dynamic> = new Feed();
+        stream.forEach(function(data: In) {
+            outFeed.add(FeedToken.Post(FeedPost.ofPromise(async.invoke(data).flatMap(function(res: Result<Out>) {
+                switch res {
+                    case Failure(err):
+                        return Promise.reject(err);
+
+                    case Success(val):
+                        return Promise.resolve(FeedPost.ofItem(val));
+                }
+            }))));
+            return Handled.Resume;
+        }).then(function(conclusion) {
+            switch conclusion {
+                case Depleted:
+                    outFeed.end();
+
+                case other:
+                    outFeed.add(FeedToken.Exception(other));
+            }
+        }, function(err) {
+            outFeed.add(FeedToken.Exception(err));
+        });
+        return (outFeed.stream() : RealStream<Out>);
+    }
+
+
+/* === Factories === */
+
+    @:from
     public static inline function make<I, O>(func: AsyncFn<I, O>):Async<I, O> {
         return new FuncAsync<I, O>(func);
     }
+
     @:from
     public static inline function ofOutcomeDyad<I, O>(func:I->Callback<Result<O>>->Void):Async<I, O> {
         return make(function(input: I):Handle<O> {
@@ -28,6 +86,7 @@ abstract Async<I, O>(AsyncObject<I, O>) from AsyncObject<I,O> to AsyncObject<I, 
             });
         });
     }
+
     @:from
     public static inline function ofJsStyleDyad<I, O>(func:(input:I, callback:(?result:O, ?error:Dynamic)->Void)->Void):Async<I, O> {
         return ofOutcomeDyad(function(input:I, cb:Callback<Result<O>>) {
@@ -40,6 +99,73 @@ abstract Async<I, O>(AsyncObject<I, O>) from AsyncObject<I,O> to AsyncObject<I, 
                 }
             });
         });
+    }
+
+    @:from
+    public static inline function sync<In, Out>(f: In -> Out):Async<In, Out> {
+        return make(function(input: In):Handle<Out> {
+            return
+            try Handle.result(f(input))
+            catch (err: Dynamic) Handle.exception(err);
+        });
+    }
+
+    @:from
+    public static inline function syncOutcome<In, Out>(f: In -> Result<Out>):Async<In, Out> {
+        return function(input: In) {
+            return Handle.sync(f(input));
+        }
+    }
+
+    public static inline function waterfall<A, B, C>(left:Async<A, B>, right:Async<B, C>):Async<A, C> {
+        return function(a:A, f:Callback<Result<C>>) {
+            left.invoke(a).then(
+                function(res: Result<B>) {
+                    switch res {
+                        case Failure(x): f.invoke(Failure(x));
+                        case Success(x):
+                            right.invoke(x).then(r -> f.invoke(r), e -> f.invoke(Failure(e)));
+                    }
+                },
+                e -> f.invoke(Failure(e))
+            );
+        }
+    }
+
+    @:op(A & B)
+    public static inline function both<In, A, B>(left:Async<In, A>, right:Async<In, B>):Async<In, Pair<A, B>> {
+        return function(input: In):Handle<Pair<A, B>> {
+            var l:Option<Result<A>> = None, r:Option<Result<B>> = None;
+            return new Promise(function(done) {
+                inline function checkStatus() {
+                    switch [l, r] {
+                        case [Some(a), Some(b)]:
+                            switch [a, b] {
+                                case [_, Failure(err)], [Failure(err), _]:
+                                    done(Failure(err));
+
+                                case [Success(a), Success(b)]:
+                                    done(Success(new Pair(a, b)));
+                            }
+
+                        case [None, _], [_, None]:
+                            //
+
+                        default:
+                            throw 'wtf';
+                    }
+                }
+                var report = err -> done(Failure(err));
+                left.invoke(input).then(function(res) {
+                    l = Some(res);
+                    checkStatus();
+                }, report);
+                right.invoke(input).then(function(res) {
+                    r = Some(res);
+                    checkStatus();
+                }, report);
+            });
+        }
     }
 }
 
