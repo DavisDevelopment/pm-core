@@ -56,3 +56,12 @@ class Outcomes {
         }
     }
 }
+
+class OptionOutcomes {
+    public static function map<A, B, Err>(o:Outcome<Option<A>, Err>, fn:A -> B):Outcome<Option<B>, Err> {
+        return switch o {
+            case Failure(e): Failure(e);
+            case Success(o): Success(o.map(fn));
+        }
+    }
+}
