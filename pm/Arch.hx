@@ -1,5 +1,7 @@
 package pm;
 
+import haxe.io.ArrayBufferView.ArrayBufferViewData;
+import haxe.io.BytesData;
 import pm.Error;
 import pm.Object;
 import pm.utils.Uuid;
@@ -434,6 +436,22 @@ class Arch {
      **/
     public static inline function isArray(x: Dynamic):Bool {
         return (x is Array);
+    }
+
+    public static function isArrayLike(x: Dynamic):Bool {
+        return (
+            isArray(x)||
+            isString(x)||
+            #if (neko || python || flash || js)
+            (x is BytesData)||
+            #end
+            isBinary(x)||
+            (x is haxe.ds.IntMap)||
+            /**
+              `ArrayBufferViewData` is the root class for `UInt8Array`, `UInt16Array`, `Int32Array`, `Float32Array` and `Float64Array`
+             **/
+            (x is ArrayBufferViewData)
+        );
     }
 
     /**
