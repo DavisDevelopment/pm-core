@@ -18,7 +18,7 @@ abstract Promise<T> (TProm<T>) from TProm<T> to TProm<T> {
         this = new Future<T, Dynamic>( d );
     }
 
-    public inline function then(resolved:Callback<T>, ?rejected:Callback<Dynamic>):Promise<T> {
+    public function then(resolved:Callback<T>, ?rejected:Callback<Dynamic>):Promise<T> {
         this.then((x -> resolved.invoke(x)), rejected != null ? (x -> rejected.invoke(x)) : null);
         return this;
     }
@@ -39,6 +39,11 @@ abstract Promise<T> (TProm<T>) from TProm<T> to TProm<T> {
         var dd = Deferred.create();
         fn(this, mfn(dd.done(_)), mfn(dd.fail(_)));
         return Promise.make( dd );
+    }
+
+    @:to
+    public inline function dynamicify():Promise<Dynamic> {
+        return cast this;
     }
 
     @:to
