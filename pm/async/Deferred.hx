@@ -42,16 +42,27 @@ abstract Deferred<Val, Err> (IDeferred<Val, Err>) from IDeferred<Val, Err> to ID
 
 /* === Factories === */
 
+    @:from
     public static inline function resolution<V,E>(res: DeferredResolution<V, E>):Deferred<V, E> {
         return new SyncDeferred( res );
     }
 
+    @:from
     public static inline function lazyResolution<V, E>(res: Lazy<DeferredResolution<V, E>>):Deferred<V, E> {
         return new SyncDeferred(res.get());
     }
 
-    public static inline function result<T, E>(v: T):Deferred<T, E> {
-        return resolution(Result( v ));
+    @:from
+    static inline function ofError<V>(error: pm.Error):Deferred<V, Error> {
+        return Exception(error);
+    }
+
+    @:from
+    static function ofOutcome<V, E>(o: Outcome<V, E>):Deferred<V, E> {
+        return switch o {
+            case Success(res): Result(res);
+            case Failure(error): Exception(error);
+        }
     }
 
     public static inline function exception<T, E>(e: E):Deferred<T, E> {
@@ -70,6 +81,7 @@ abstract Deferred<Val, Err> (IDeferred<Val, Err>) from IDeferred<Val, Err> to ID
         exec( out );
         return out;
     }
+
     public static function create<V,E>():AsyncDeferred<V, E> {
         return new AsyncDeferred<V,E>();
     }
@@ -126,6 +138,11 @@ abstract Deferred<Val, Err> (IDeferred<Val, Err>) from IDeferred<Val, Err> to ID
             });
         });
     }
+
+    @:from
+    public static inline function result<T, E>(v: T):Deferred<T, E> {
+        return resolution(Result( v ));
+    }
 }
 
 class SyncDeferred<V, E> implements IDeferred<V, E> {
@@ -169,7 +186,10 @@ class AsyncDeferred<V, E> implements IDeferred<V, E> {
     }
 
     public function done(x: V) {
-        assert(!state.match(Resolved(_)), new InvalidOperation('Deferred<*, *> instance is already resolved; cannot resolve again'));
+        assert(
+            !state.match(Resolved(_)), 
+            new InvalidOperation('Deferred<*, *> instance is already resolved; cannot resolve again')
+        );
 
         var res;
         state = Resolved(res=Result( x ));
@@ -184,6 +204,17 @@ class AsyncDeferred<V, E> implements IDeferred<V, E> {
         var res;
         state = Resolved(res=Exception( x ));
         rs.broadcast( res );
+        rs.dispose();
+        rs = null;
+    }
+
+    public function resolve(outcum: Outcome<V, E>) {
+        var res;
+        state = Resolved(res = switch outcum {
+            case Success(r): Result(r);
+            case Failure(e): Exception(e);
+        });
+        rs.broadcast(res);
         rs.dispose();
         rs = null;
     }

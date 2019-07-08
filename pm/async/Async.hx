@@ -358,6 +358,8 @@ class VoidAsyncs {
     }
 
     public static function pool(a:Array<VoidAsync>, complete:VCb) {
+        if (a.length == 0)
+            return complete.done();
         var finished:Int = 0, lastLength:Int = a.length;
         var interrupt = {};
         var nextCb;

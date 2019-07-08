@@ -5,19 +5,24 @@ import pm.Noise;
 import pm.Outcome;
 
 import pm.async.Callback;
+import pm.async.Callback.CallbackLink;
 import pm.async.Deferred;
 
 using pm.Functions;
 
 class Future<Val, Err> {
+    public var key(default, null):Int = HashKey.next();
+    public var tail(default, null):FutureHandle<Val, Err>;
+
     var d(default, null): Deferred<Val, Err>;
 
     var ss:{v:Signal<Val>, e:Signal<Err>} = null;
     var _o:Null<Outcome<Val, Err>> = null;
     //var 
 
-    public function new(base: Deferred<Val, Err>):Void {
+    public function new(base:Deferred<Val, Err>):Void {
         this.d = base;
+        this.tail = new FutureHandle(this);
         var needSigs = true;
         this.d.handle(function(r: DeferredResolution<Val, Err>) {
             switch ( r ) {
@@ -43,9 +48,13 @@ class Future<Val, Err> {
         }
     }
 
+    /**
+      handle the "thrown" exception
+     **/
     public function catchException(onErr: Err -> Void) {
         if (ss != null) {
             ss.e.listen( onErr );
+            // ss.e.listen
         }
         else if (_o != null) {
             switch _o {
@@ -60,12 +69,16 @@ class Future<Val, Err> {
         }
     }
 
-    public function then(onRes:Val->Void, ?onErr:Err->Void) {
+    /**
+      [TODO] have `then` return a `CallbackLink`, or perhaps a `Maybe<CallbackLink>`
+     **/
+    public function then(onRes:Val->Void, ?onErr:Err->Void):CallbackLink {
         //d.handle(_handleCb(onRes, onErr));
         if (ss != null) {
-            ss.v.listen(onRes);
+            var lnk = ss.v.listen(onRes);
             if (onErr != null)
-                ss.e.listen(onErr);
+                lnk = lnk & ss.e.listen(onErr);
+            return lnk;
         }
         else if (_o != null) {
             switch ( _o ) {
@@ -76,6 +89,7 @@ class Future<Val, Err> {
                     if (onErr != null)
                         onErr( x );
             }
+            return (function() trace('foo'));
         }
         else { 
             trace( this );
@@ -83,13 +97,13 @@ class Future<Val, Err> {
         }
     }
 
-    public function handle(cb: Callback<Outcome<Val, Err>>):Future<Val, Err> {
+    public function handle(cb: Callback<Outcome<Val, Err>>):CallbackLink {
         var done = (x -> cb.invoke( x )).once();
-        inline then(
+        var l = then(
             done.compose((v: Val) -> Outcome.Success( v )),
             done.compose((e: Err) -> Outcome.Failure( e ))
         );
-        return this;
+        return l;
     }
 
     public function omap<OVal, OErr>(fn: Outcome<Val, Err> -> Outcome<OVal, OErr>):Future<OVal, OErr> {
@@ -144,6 +158,21 @@ class Future<Val, Err> {
         return new Future<Val, Err>(function(res: Callback<Outcome<Val, Err>>) {
             prom.then(function(o: Outcome<Val, Err>) {
                 res.invoke( o );
+            });
+        });
+    }
+}
+
+class FutureHandle<T, Err> {
+    public var owner(default, null): Future<T, Err>;
+    public function new(f) {
+        this.owner = f;
+    }
+
+    public function flatMap<O, OErr>(fn: Outcome<T, Err> -> Future<O, OErr>):Future<O, OErr> {
+        return new Future(function(done) {
+            owner.handle(function(outcome) {
+                fn(outcome).handle(done);
             });
         });
     }

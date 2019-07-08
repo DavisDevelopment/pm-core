@@ -21,6 +21,8 @@ import haxe.extern.EitherType;
 //import haxe.macro.Expr;
 //import haxe.macro.Context;
 
+import pm.Assert.assert;
+
 using pm.Arrays;
 using pm.Iterators;
 using pm.Functions;
@@ -32,8 +34,15 @@ using pm.Options;
 //using tannus.macro.MacroTools;
 
 @:forward
+@:notNull
 abstract Stream<Item, Quality> (StreamObject<Item, Quality>) from StreamObject<Item, Quality> to StreamObject<Item, Quality> {
 /* === Instance Methods === */
+
+    @:from
+    public static function wrap<Item, Quality>(o: StreamObject<Item, Quality>):Stream<Item, Quality> {
+        assert(o != null, 'NullPointer');
+        return (cast o : Stream<Item, Quality>);
+    }
 
 /* === Instance Fields === */
 
@@ -130,12 +139,19 @@ class ErrorStream<Item, Error> extends StreamBase<Item, Error> {
 
 class Empty<Item, Quality> extends StreamBase<Item, Quality> {
     public function new() {}
+    
     override function next():Next<Step<Item, Quality>> {
         return Next.sync(Step.End);
     }
+
     override function forEach<Safety>(handler: Handler<Item, Safety>):Next<Conclusion<Item, Safety, Quality>> {
         return Next.sync(Conclusion.Depleted);
     }
+
+    override function get_depleted():Bool {
+        return true;
+    }
+
     static var inst = new Empty<Dynamic, Dynamic>();
     public static inline function make<Item, Quality>():Stream<Item, Quality> {
         return (cast inst : Stream<Item, Quality>);
@@ -144,8 +160,14 @@ class Empty<Item, Quality> extends StreamBase<Item, Quality> {
 
 class Single<Item, Quality> extends StreamBase<Item, Quality> {
     var value: Lazy<Item>;
-    public function new(value) {
-        this.value = value;
+    
+    public function new(value:Lazy<Item>, ?pos:haxe.PosInfos):Void {
+        assert(value != null, 'null $value');
+        assert(Lazy.is(value), new pm.Error('Wrong type for [value]:${Type.typeof(value)}', pos));
+
+        this.value = Lazy.ofFn(function() {
+            return value.get();
+        });
     }
 
     override function next():Next<Step<Item, Quality>> {
@@ -357,6 +379,11 @@ class CompoundStream<I,Q> extends StreamBase<I, Q> {
     /* Constructor Function */
     public function new(parts) {
         this.parts = parts;
+        #if debug
+        this.parts = this.parts.map(function(s) {
+            return Stream.wrap(s);
+        });
+        #end
     }
 
     override function get_depleted():Bool {
@@ -421,14 +448,27 @@ class CompoundStream<I,Q> extends StreamBase<I, Q> {
     }
 
     override function decompose(into: Array<Stream<I, Q>>) {
-        for (s in parts)
+        for (s in parts) 
             s.decompose( into );
     }
 
     public static function of<I,Q>(parts: Array<Stream<I, Q>>):CompoundStream<I, Q> {
         var streams:Array<Stream<I, Q>> = new Array();
-        for (s in parts)
-            s.decompose( streams );
+        // for (s in parts)
+            // s.decompose( streams );
+        for (s in parts) {
+            try {
+                assert((s is StreamObject<Dynamic, Dynamic>), Type.typeof(s));
+
+                s.decompose( streams );
+            }
+            catch (e: Dynamic) {
+                //trace( s );
+                //trace((s is StreamObject<Dynamic, Dynamic>));
+                trace( e );
+                throw e;
+            }
+        }
         return new CompoundStream(streams);
     }
 
@@ -807,11 +847,14 @@ abstract Convert<In, Out> (In -> Next<Out>) from In -> Next<Out> to In -> Next<O
     }
 }
 
+/**
+  compatibility layer between actual Promise<?> implementation in use and the Promise API used in tink, on which this module is heavily based
+ **/
 @:forward
 abstract Next<T> (Promise<T>) from Promise<T> to Promise<T> {
 /* === Methods === */
 
-    public inline function map<O>(f: T->O):Next<O> {
+    public inline function map<O>(f: T -> O):Next<O> {
         return this.map( f );
     }
 
@@ -822,6 +865,11 @@ abstract Next<T> (Promise<T>) from Promise<T> to Promise<T> {
             //}, no);
         //});
         return this.flatMap(v -> f( v ));
+    }
+
+    @:to
+    public inline function promise():Promise<T> {
+        return cast this;
     }
 
 /* === Casting/Factories === */
@@ -839,6 +887,8 @@ abstract Next<T> (Promise<T>) from Promise<T> to Promise<T> {
     }
 
     public static inline function sync<T>(value: Lazy<T>):Next<T> return fromLazy( value );
+    
+    @:from
     public static inline function async<T>(f: (T->Void)->Void):Next<T> {
         return new Promise<T>(function(yes, _) {
             f(function(value: T) {
