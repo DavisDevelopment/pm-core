@@ -31,8 +31,14 @@ abstract Lazy<T> (ILazy<T>) from ILazy<T> to ILazy<T> {
     public static inline function ofConst<T>(value: T):Lazy<T> {
         return new ConstLazy<T>( value );
     }
+
+    public static inline function is(v: Dynamic):Bool {
+        return (v is ILazy<Dynamic>)||(v is ConstLazy<Dynamic>)||(v is FnLazy<Dynamic>);
+    }
 }
 
+@:keep
+@:keepSub
 interface ILazy<T> {
     var disposed(default, null): Bool;
     

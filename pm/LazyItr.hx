@@ -13,7 +13,7 @@ abstract LazyItr<T> (LazyIterator<T>) from LazyIterator<T> to LazyIterator<T> {
     }
 }
 
-interface LazyIterator<T> {
+typedef LazyIterator<T> = {
     function next():LazyItrStep<T>;
 }
 

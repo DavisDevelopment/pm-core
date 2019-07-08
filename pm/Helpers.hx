@@ -40,4 +40,7 @@ class Helpers {
         fn( x );
         return x;
     }
+    public static inline function vtap<T>(x:T, fn:T -> Void):Void {
+        return fn( x );
+    }
 }

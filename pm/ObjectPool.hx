@@ -28,6 +28,7 @@ class ObjectPool<T> {
 	public var maxSize(default, null):Int;
 	
 	private var mPool: Array<T>;
+	private var mFree : Array<T>;
 	private var mFactory: Void->T;
 	private var mDispose: T->Void;
 	private var mCapacity:Int = 16;
@@ -37,7 +38,18 @@ class ObjectPool<T> {
 		mDispose = dispose == null ? function(x:T) {} : dispose;
 		maxSize = maxNumObjects;
 		mPool = Arrays.alloc( mCapacity );
+		mFree = new Array();
 	}
+
+	/*
+	public function release(x: T) {
+		assert(mPool.has(x), new pm.Error('Cannot release $x'));
+		if (!mFree.has( x )) {
+			mFree.push( x );
+			mDispose( x );
+		}
+	}
+	*/
 	
 	/**
 		Fills the pool in advance with `numObjects` objects.
@@ -49,7 +61,8 @@ class ObjectPool<T> {
 		mPool.nullify();
 		mPool = Arrays.alloc( size );
 		for (i in 0...numObjects) {
-		    mPool[i](mFactory());
+		    mPool[i] = mFactory();
+		}
 	}
 	
 	/**

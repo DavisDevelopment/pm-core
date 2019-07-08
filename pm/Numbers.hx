@@ -28,6 +28,10 @@ class Ints {
             else 0;
     }
 
+    public static inline function clamp(v : Int, min : Int, max : Int) : Int {
+      return v < min ? min : (v > max ? max : v);
+    }
+
     public static inline function toString(n:Int, base:Int):String {
         return pm.core.BaseTools.toBase(n, base);
     }
