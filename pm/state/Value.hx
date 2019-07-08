@@ -32,6 +32,10 @@ class Value<T> {
         });
     }
 
+    public function observe():ValueObserver<T> {
+        return new ValueObserver(this);
+    }
+
     @:noCompletion
     public dynamic function _schedule_(f: Void->Void):Void {
         _staticDefaultSchedule_( f );
@@ -39,6 +43,29 @@ class Value<T> {
 
     public static dynamic function _staticDefaultSchedule_(f: Void->Void):Void {
         return Callback.defer( f );
+    }
+}
+
+class ValueObserver<T> {
+    private var value: Value<T>;
+    private var listeners: ImmutableList<pm.async.Callback.CallbackLink>;
+
+    public function new(v: Value<T>) {
+        value = v;
+        listeners = [];
+    }
+
+    public function subscribe(f: Callback<ValueUpdate<T>>) {
+        @:privateAccess {
+            var link = value._change_.on( f );
+            listeners = link & listeners;
+        }
+    }
+
+    public function release() {
+        listeners.iter(function(link) {
+            link.cancel();
+        });
     }
 }
 
