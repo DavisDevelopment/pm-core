@@ -93,6 +93,7 @@ class Arch {
         if (isBool(a)) return isBool(b) ? a == b : false;
         if (isFloat(a)) return isFloat(b) ? a == b : false;
         if (isString(a)) return isString(b) ? a == b : false;
+        if (isBinary(a)) return isBinary(b) ? cast(a, Bytes).compare(b) == 0 : false;
         if (a == null || b == null) return a == b;
 
         if (isDate(a)) return isDate(b) ? cast(a, Date).getTime() == cast(b, Date).getTime() : false;
