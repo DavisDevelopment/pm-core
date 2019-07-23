@@ -362,6 +362,26 @@ class Arch {
         return compareNumbers(a.length, b.length);
     }
 
+    public static #if (js && !macro) inline #end function isTruthy(value: Dynamic):Bool {
+        #if (js && !macro)
+        return js.Syntax.code('!!{0}', value);
+        #else
+        if (value == null) return false;
+        if (isBool(value)) return cast(value, Bool);
+        if (isFloat(value)) {
+            return value != 0 && value != Math.NaN;
+        }
+        if (isString(value)) {
+            return ((value : String).length != 0);
+        }
+        return true;
+        #end
+    }
+
+    public static function isFalsy(value: Dynamic):Bool {
+        return !(inline isTruthy(value));
+    }
+
     /**
       do dat type-checking
      **/
