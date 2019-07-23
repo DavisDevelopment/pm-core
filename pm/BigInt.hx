@@ -14,20 +14,28 @@ abstract BigInt(BigIntImpl) from BigIntImpl to BigIntImpl {
   public static var two(default, null) : BigInt = Small.two;
   public static var negativeOne(default, null) : BigInt = Small.negativeOne;
 
-  @:from inline public static function fromInt(value : Int) : BigInt
+  @:from 
+  inline public static function fromInt(value : Int) : BigInt {
     return Bigs.fromInt(value);
+  }
 
-  @:from inline public static function fromFloat(value : Float) : BigInt
+  @:from 
+  inline public static function fromFloat(value : Float) : BigInt {
     return Bigs.fromFloat(value);
+  }
 
-  public inline static function fromInt64(value : haxe.Int64) : BigInt
+  public inline static function fromInt64(value : haxe.Int64) : BigInt {
     return Bigs.fromInt64(value);
+  }
 
-  @:from public inline static function fromString(value : String) : BigInt
+  @:from 
+  public inline static function fromString(value : String) : BigInt {
     return Bigs.parseBase(value, 10);
+  }
 
-  public inline static function fromStringWithBase(value : String, base : Int) : BigInt
+  public inline static function fromStringWithBase(value : String, base : Int) : BigInt {
     return Bigs.parseBase(value, base);
+  }
 
   public static function randomBetween(a : BigInt, b : BigInt) {
     var low  = a.min(b),
@@ -173,19 +181,23 @@ Returns the greater common denominator
     return a.multiply(b).divide(a.gcd(b));
   }
 
-  public function greaterThan(that : BigInt) : Bool
+  public function greaterThan(that : BigInt) : Bool {
     return compareTo(that) > 0;
+  }
 
-  @:op(A>B)
-  static public function greater(self : BigInt, that : BigInt) : Bool
+  @:op(A > B)
+  static public function greater(self : BigInt, that : BigInt) : Bool {
     return self.compareTo(that) > 0;
+  }
 
-  public function greaterEqualsTo(that : BigInt) : Bool
+  public function greaterEqualsTo(that : BigInt) : Bool {
     return compareTo(that) >= 0;
+  }
 
-  @:op(A>=B)
-  static public function greaterEquals(self : BigInt, that : BigInt) : Bool
+  @:op(A >= B)
+  static public function greaterEquals(self : BigInt, that : BigInt) : Bool {
     return self.compareTo(that) >= 0;
+  }
 
   public function lessThan(that : BigInt) : Bool
     return compareTo(that) < 0;
@@ -288,18 +300,26 @@ Returns the greater common denominator
   inline public function divMod(that : BigInt) : { quotient : BigInt, remainder : BigInt }
     return this.divMod(that);
 
-  @:to inline public function toInt() : Int
+  @:to 
+  inline public function toInt() : Int {
     return this.toInt();
+  }
 
-  @:to inline public function toFloat() : Float
+  @:to 
+  inline public function toFloat() : Float {
     return this.toFloat();
+  }
 
-  inline public function toInt64() : haxe.Int64
+  inline public function toInt64() : haxe.Int64 {
     return Bigs.toInt64(this);
+  }
 
-  @:to inline public function toString() : String
+  @:to 
+  inline public function toString() : String {
     return this.toString();
+  }
 
-  inline public function toStringWithBase(base : Int) : String
+  inline public function toStringWithBase(base : Int) : String {
     return this.toStringWithBase(base);
+  }
 }
