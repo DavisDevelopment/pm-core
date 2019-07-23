@@ -137,6 +137,7 @@ abstract Promise<T> (TProm<T>) from TProm<T> to TProm<T> {
     }
 
 #if js
+
     @:to
     public function native():js.Promise<T> {
         return new js.Promise<T>(function(accept, reject) {
@@ -150,6 +151,35 @@ abstract Promise<T> (TProm<T>) from TProm<T> to TProm<T> {
             );
         });
     }
+
+    @:from
+    public static function ofJsPromise<A>(p: js.Promise<A>):Promise<A> {
+        return new Promise<A>(function(y, n) p.then(y, n));
+    }
+
+#end
+
+#if (tink || tink_core)
+
+    @:from static public function ofTinkPromise<T>(promise: tink.core.Promise<T>):Promise<T> {
+        // #if (js && !macro)
+        // return ofJsPromise(@:privateAccess promise.toJsPromise());
+        // #else
+        return new Promise(function(accept, reject) {
+            // tink.core.Promise.Next.
+            promise.handle(function(o) {
+                switch o {
+                    case Success(result):
+                        accept(result);
+
+                    case Failure(error):
+                        reject(error);
+                }
+            });
+        });
+        // #end
+    }
+
 #end
 
     public static function promisifySimple<T>(x: Dynamic):Promise<T> {
