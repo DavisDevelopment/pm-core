@@ -10,7 +10,7 @@ using pm.Options;
 abstract Maybe<T> (Option<T>) from Option<T> to Option<T> {
 
     @:op( a.field )
-    public static macro function getattr<T>(self:ExprOf<Maybe<T>>, attr) {
+    public static macro function getattr<T>(self:ExprOf<Maybe<T>>, attr:String) {
         return macro ($self * (a -> a.$attr));
     }
     
