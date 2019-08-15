@@ -78,7 +78,7 @@ abstract Callback<T> (T -> Void) from (T -> Void) {
     }
 }
 
-private interface LinkObject {
+interface LinkObject {
     function cancel():Void;
 }
 
@@ -220,7 +220,6 @@ abstract CallbackList<T> (Array<ListCell<T>>) from Array<ListCell<T>> {
     @:arrayAccess
     public function get(index: Int):ListCell<T> {
         assert((index >= 0 && index < length && Math.isFinite( index )), haxe.io.Error.OutsideBounds);
-
         return this[index];
     }
 
