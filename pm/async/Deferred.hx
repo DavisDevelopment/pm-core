@@ -100,6 +100,15 @@ abstract Deferred<Val, Err> (IDeferred<Val, Err>) from IDeferred<Val, Err> to ID
             });
         });
     }
+    
+    @:from
+    public static function successCallback<V,E>(exec:Callback<V>->Void):Deferred<V, E> {
+        return asyncBase(function(d) {
+            exec(function(result: V) {
+                d.done(result);
+            });
+        });
+    }
 
     @:from
     public static function monadicAsync<V, E>(exec: (resolve:V->Void)->Void):Deferred<V, E> {
