@@ -96,6 +96,9 @@ class Arrays {
         }
     }
 
+    /**
+      check whether `a` contains the value `x`
+     **/
     public static inline function has<T>(a:Array<T>, x:T):Bool {
         #if (js && js_es >= 6)
         return untyped a.includes(x);
@@ -287,6 +290,19 @@ class Arrays {
     public static function isort<T>(a:Array<T>, f:T->T->Int):Array<T> {
         haxe.ds.ArraySort.sort(a, f);
         return a;
+    }
+
+    public static function mapreduce<A, B, Agg>(array:Array<A>, mapFn:A -> B, reduceFn:Agg -> B -> Agg, init:Agg, right:Bool=false):Agg {
+        var red = right ? reduceRight : reduce;
+        return red(array.map(mapFn), reduceFn, init);
+    }
+
+    public static function mapfilter<T, TOut>(a:Array<T>, test:T->Bool, map:T->TOut):Array<TOut> {
+        return reduce(a, function(out:Array<TOut>, item) {
+            if (test(item))
+                out.push(map(item));
+            return out;
+        }, new Array<TOut>());
     }
 
     public static function sorted<T>(a:Array<T>, f:T->T->Int):Array<T> {
