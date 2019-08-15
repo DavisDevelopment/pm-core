@@ -21,13 +21,15 @@ class LinkedQueue<T> implements IQueue<T> {
 
 /* === Methods === */
 
-    public function peek():T {
+    public inline function peek():T {
         return mHead.value;
     }
+    public inline function head():T return peek();
 
-    public function back():T {
+    public inline function back():T {
         return mTail.value;
     }
+    public inline function tail():T return back();
 
     public function enqueue(value: T) {
         mTop++;
@@ -41,6 +43,7 @@ class LinkedQueue<T> implements IQueue<T> {
             mTail = node;
         }
     }
+    public inline function push(v: T) enqueue(v);
 
     /**
       {A, B, C}
@@ -61,6 +64,7 @@ class LinkedQueue<T> implements IQueue<T> {
         }
         return putNode( node );
     }
+    public inline function unshift():T return dequeue();
 
     public inline function free() {
         while (mTop > 0) {
