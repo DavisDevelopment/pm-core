@@ -134,6 +134,10 @@ class Strings {
         return !~/\D/gm.match( s );
     }
 
+    public static inline function append(a:String, b:String):String {
+        return a + b;
+    }
+
 	/**
 		Encode an URL by using the standard format.
 	**/
