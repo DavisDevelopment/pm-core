@@ -22,7 +22,7 @@ class Signal<T> {
     }
 
     public inline function before(fn:Callback<T>, ?once:Bool):CallbackLink {
-        return listen(fn, once);
+        return listen(fn, true, once);
     }
 
     public function listen(fn:Callback<T>, ?prepend:Bool=false, ?once:Bool=false):CallbackLink {
@@ -31,6 +31,7 @@ class Signal<T> {
             (function(x) {
                 fn.invoke( x );
                 lnk.cancel();
+                // trace(ll);
             })
         else fn;
 
