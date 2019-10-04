@@ -23,6 +23,18 @@ abstract ImmutableList<T>(ListRepr<T>) from ListRepr<T> to ListRepr<T> {
 	static inline function prepend<T>(v:T, a:ImmutableList<T>):ImmutableList<T> {
 		return Hd(v,a);
 	}
+	// @:op(a&b)
+	// static inline function append<T>(l:ImmutableList<T>, v:T):ImmutableList<T> return l.append([v]);
+	@:op(a & b)
+	public static inline function concat<T>(a:ImmutableList<T>, b:ImmutableList<T>):ImmutableList<T>
+		return a.append(b);
+
+	public static inline function init<T>(size:Int, createItem:Int->T) {
+		return inline Il.init(size, createItem);
+	}
+	public static inline function alloc<T>(size:Int, x:T) {
+		return inline Il.make(size, x);
+	}
 
 	public function iterator():Iterator<T> {
 		return new ILItr<T>( this );
@@ -36,12 +48,38 @@ abstract ImmutableList<T>(ListRepr<T>) from ListRepr<T> to ListRepr<T> {
 		return Il.iter(f, this);
 	}
 
+	static function _flatten<T>(l:ImmutableList<ImmutableList<T>>) {
+		var res:ImmutableList<T> = Tl;
+		for (x in l) {
+			res = res & x;
+		}
+		return res;
+	}
+
+	public inline function find(fn: T -> Bool):T return Il.find(fn, this);
+	public inline function findMap<B>(f: T->Option<B>) return Il.find_map(f, this);
+	public inline function filterMap<B>(f: T->Option<B>) return Il.filter_map(f, this);
+	public inline function map<O>(f: T -> O):ImmutableList<O> return Il.map(f, this);
+	public function flatMap<O>(f:T -> ImmutableList<O>):ImmutableList<O> {
+		var res:ImmutableList<O> = Tl;
+		for (x in iterator())
+			res = ImmutableList.concat(res, f(x));
+		return res;
+	}
+	public inline function reduceRight<Agg>(f:Agg->T->Agg, agg:Agg):Agg {
+		return inline Il.fold_right(
+			f.flipArguments(),
+			this,
+			agg
+		);
+	}
+
 	public inline function reduce<Agg>(fn:Agg -> T -> Agg, agg:Agg):Agg {
 		return inline Il.fold_left(fn, agg, this);
 	}
 	
 	@:to 
-	function toArray():Array<T> {
+	public inline function toArray():Array<T> {
 		var a = [];
 		var t = this;
 		while( true ) {
@@ -53,17 +91,33 @@ abstract ImmutableList<T>(ListRepr<T>) from ListRepr<T> to ListRepr<T> {
 		return a;
 	}
 
+	@:from
+	static inline function fromRepr<T>(l: ListRepr<T>):ImmutableList<T> {
+		return (l : ImmutableList<T>);
+	}
+
 	@:from 
-	static function fromArray<T>(a: Array<T>):ImmutableList<T> {
+	public static inline function fromArray<T>(a: Array<T>):ImmutableList<T> {
 		var l = Tl;
 		var i = a.length - 1;
 		while( i >= 0 )
 			l = Hd(a[i--],l);
 		return l;
 	}
+
+	@:from
+	public static function fromIterator<T>(it: Iterator<T>):ImmutableList<T> {
+		var l:ImmutableList<T> = Tl;
+		while (it.hasNext())
+			l = Hd(it.next(), l);
+		return l.rev();
+	}
+
+	@:from
+	static function fromIterable<T>(it: Iterable<T>):ImmutableList<T> return it.iterator();
 		
 	@:to
-	function toString():String {
+	public inline function toString():String {
 		var a = toArray();
 		return Std.string(a);
 	}
@@ -100,7 +154,8 @@ class Il {
 		return switch (a) {
 			case Tl: b;
 			case Hd(v, tl):
-				v & append(tl, b);
+				// ([v] : Array<T>) & append(tl, b);
+				Hd(v, append(tl, b));
 		}
 	}
 
@@ -137,7 +192,7 @@ class Il {
 		}
 	}
 
-	public static function init<T> (length:Int, f:Int->T): ImmutableList<T> {
+	public static inline function init<T> (length:Int, f:Int->T): ImmutableList<T> {
 		if (length < 0) { throw new pm.Error("Il.init"); }
 		var arr = [for (i in 0...length) f(i)];
 		return arr;
