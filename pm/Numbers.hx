@@ -61,7 +61,7 @@ class Floats {
   public inline static function toPrecision(n:Float, precision:Int = 2):Float {
       return (
           Std.int( n ) + 
-          Std.int((n - Std.int( n  )) * pow(10, precision)) /
+          Std.int((n - Std.int( n )) * pow(10, precision)) /
           pow(10, precision)
      );
   }

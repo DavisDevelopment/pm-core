@@ -2,39 +2,52 @@ package pm;
 
 using pm.Strings;
 
+/**
+  
+ **/
 @:forward
 abstract Path (PathObject) from PathObject to PathObject {
-  public inline function new(path: String) {
-    this = new PathObject(path);
-  }
-  
-  public inline function isAbsolute():Bool {
-    return PathStringTools.isAbsolute(toString());
-  }
-  
-  public inline function normalize():Path {
-    return new Path(PathStringTools.normalize(toString()));
-  }
-  
-  @:op(A / B)
-  public static function append(a:Path, b:Path):Path {
-    return new Path(PathStringTools.join([a.toString(), b.toString()]));
-  }
+	/**  Constructor Function  **/
+	public inline function new(path: String) {
+		this = new PathObject(path);
+	}
+	
+	public inline function isAbsolute():Bool {
+		return PathStringTools.isAbsolute(toString());
+	}
+	
+	public inline function normalize():Path {
+		return new Path(PathStringTools.normalize(toString()));
+	}
+	
+	@:op(A / B)
+	public static function append(a:Path, b:Path):Path {
+		return new Path(PathStringTools.join([a.toString(), b.toString()]));
+	}
+	@:op(A / B)
+	@:commutative
+	public static inline function appendString(a:Path, s:String):Path {
+		return new Path(PathStringTools.join([a.toString(), s]));
+	}
+
+	public static function join(it: Iterable<String>):Path {
+		return new Path(PathStringTools.join([for (p in it) p]));
+	}
 
 	@:op(A == B)
-	public static function equality(a:Path, b:Path):Bool {
+	public static inline function equality(a:Path, b:Path):Bool {
 		return a.normalize().toString() == b.normalize().toString();
 	}
-  
-  @:to
-  public inline function toString():String {
-    return this.toString();
-  }
-  
-  @:from
-  public static inline function fromString(s: String):Path {
-    return new Path(s);
-  }
+	
+	@:to
+	public inline function toString():String {
+		return this.toString();
+	}
+	
+	@:from
+	public static inline function fromString(s: String):Path {
+		return new Path(s);
+	}
 }
 
 /**
@@ -144,7 +157,7 @@ class PathStringTools {
 
 		If `path` is `null`, the result is unspecified.
 	**/
-	public static function withoutExtension( path : String ) : String {
+	public static inline function withoutExtension(path : String):String {
 		var s = new Path(path);
 		s.ext = null;
 		return s.toString();
@@ -155,7 +168,7 @@ class PathStringTools {
 
 		If `path` is `null`, the result is unspecified.
 	**/
-	public static function withoutDirectory( path ) : String {
+	public static inline function withoutDirectory( path ) : String {
 		var s = new Path(path);
 		s.dir = null;
 		return s.toString();
@@ -168,7 +181,7 @@ class PathStringTools {
 
 		If `path` is `null`, the result is unspecified.
 	**/
-	public static function directory( path ) : String {
+	public static inline function directory( path ) : String {
 		var s = new Path(path);
 		if( s.dir == null )
 			return "";
@@ -182,7 +195,7 @@ class PathStringTools {
 
 		If `path` is `null`, the result is unspecified.
 	**/
-	public static function extension( path ) : String {
+	public static inline function extension( path ) : String {
 		var s = new Path(path);
 		if( s.ext == null )
 			return "";
@@ -196,7 +209,7 @@ class PathStringTools {
 
 		If `path` or `ext` are `null`, the result is unspecified.
 	**/
-	public static function withExtension( path, ext ) : String {
+	public static inline function withExtension( path, ext ) : String {
 		var s = new Path(path);
 		s.ext = ext;
 		return s.toString();
