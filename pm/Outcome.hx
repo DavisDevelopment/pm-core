@@ -5,6 +5,7 @@ import haxe.ds.Option;
 using pm.Options;
 
 @:using(pm.Outcome.Outcomes)
+@:using(pm.Outcome.OptionOutcomes)
 enum Outcome<Result, Error> {
     Success(result: Result);
     Failure(error: Error);
@@ -53,6 +54,12 @@ class Outcomes {
         return switch o {
             case Success(res): f(res);
             case Failure(x): Failure(x);
+        }
+    }
+    public static inline function map<A, B, Err>(o:Outcome<A, Err>, f:A -> B):Outcome<B, Err> {
+        return switch o {
+            case Success(a): Success(f(a));
+            case Failure(err): Failure(err);
         }
     }
 }
