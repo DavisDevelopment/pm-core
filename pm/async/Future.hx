@@ -92,7 +92,7 @@ class Future<Val, Err> {
             return (function() trace('foo'));
         }
         else { 
-            trace( this );
+            // trace( this );
             throw new Error();
         }
     }
@@ -130,8 +130,17 @@ class Future<Val, Err> {
     }
 
     public function flatMap<T>(fn: Val -> Future<T, Err>):Future<T, Err> {
-        return new Future(function(exit: Callback<Outcome<T, Err>>) {
+        // trace('creating flat-mapped Future');
+        var out = new Future(function(exit: Callback<Outcome<T, Err>>) {
+            #if debug
+            var tmp = exit;
+            exit = function(o) {
+                // trace('resolving Deferred for flat-mapped Future');
+                tmp(o);
+            };
+            #end
             handle(function(o: Outcome<Val, Err>) {
+                // trace('handled: $o');
                 switch o {
                     case Success(x):
                         fn( x ).handle( exit );
@@ -141,6 +150,12 @@ class Future<Val, Err> {
                 }
             });
         });
+        // out.then(function(result) {
+        //     trace('flat-mapped future yielded $result');
+        // }, function(error: Dynamic) {
+        //     trace('flat-mapped future raised $error');
+        // });
+        return out;
     }
 
     /**

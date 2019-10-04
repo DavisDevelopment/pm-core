@@ -5,6 +5,7 @@ import pm.Assert.assert;
 import pm.Error;
 
 @:forward
+@:callable
 abstract Callback<T> (T -> Void) from (T -> Void) {
     /* Constructor Function */
     public inline function new(fn) {
@@ -57,6 +58,7 @@ abstract Callback<T> (T -> Void) from (T -> Void) {
 
     @:noUsing 
     static public inline function defer(fn: Void->Void):Void {
+        // pm.concurrent.RunLoop.current.work( fn );
         #if macro
             fn();
         #elseif tink_runloop
@@ -94,23 +96,33 @@ abstract CallbackLink(LinkObject) from LinkObject {
         }
     }
 
-    //@:deprecated('Use cancel() instead')
+    @:deprecated('Use cancel() instead')
     public inline function dissolve():Void {
         cancel();
     }
 
     static function noop() {}
 
-    @:to inline function toFunction():Void->Void {
+    @:to 
+    inline function toFunction():Void->Void {
         return if (this == null) noop else this.cancel;
     }
 
-    @:to inline function toCallback<A>():Callback<A> {
+    @:to 
+    inline function toCallback<A>():Callback<A> {
         return function (_) this.cancel();
     }
+    @:from static inline function ofLink(lo: LinkObject):CallbackLink {
+        return (untyped lo : CallbackLink);
+    }
 
-    @:from static inline function fromFunction(fn: Void->Void) {
+    @:from 
+    static inline function fromFunction(fn: Void->Void) {
         return new CallbackLink( fn );
+    }
+    @:from
+    static inline function fromAnon(dlo: DynLinkObject):CallbackLink {
+        return AnonLink.make(dlo);
     }
 
     @:op(a & b)
@@ -119,8 +131,46 @@ abstract CallbackLink(LinkObject) from LinkObject {
     }
 
     @:from 
-    static public function fromMany(callbacks:Array<CallbackLink>) {
+    static public function fromMany(callbacks: Array<CallbackLink>) {
         return fromFunction(function () for (cb in callbacks) cb.cancel());
+    }
+}
+
+typedef DynLinkObject = {function cancel():Void;};
+class AnonLink implements LinkObject {
+    var d: DynLinkObject;
+    function new(dlo: DynLinkObject) {
+        d = dlo;
+    }
+    public function cancel() {
+        if (d != null && d.cancel != null)
+            d.cancel();
+    }
+    public static function make(anon: DynLinkObject):AnonLink {
+        assert(!Std.is(anon, LinkObject), 'disallow');
+        return new AnonLink(anon);
+    }
+}
+class DynLink implements LinkObject {
+    var d: Dynamic;
+    public function new(dlo: Dynamic) {
+        assert(
+            dlo != null &&
+            Reflect.hasField(dlo, 'cancel') &&
+            Reflect.isFunction(dlo.cancel),
+            '$dlo should be {function cancel();}'
+        );
+        this.d = dlo;
+    }
+    public function cancel():Void {
+        try {
+            Reflect.callMethod(d, Reflect.getProperty(d, 'cancel'), []);
+        }
+        catch (e: Dynamic) {
+            #if js untyped console.error(e); #end
+            trace('DynLink($d).cancel() threw an error...');
+            throw e;
+        }
     }
 }
 

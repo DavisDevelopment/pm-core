@@ -5,6 +5,9 @@ import pm.Assert.assert;
 import pm.Noise;
 import pm.Outcome;
 
+import pm.async.impl.Future as FutureDeferred;
+import pm.async.impl.Future.DTrigger;
+
 @:forward
 abstract Deferred<Val, Err> (IDeferred<Val, Err>) from IDeferred<Val, Err> to IDeferred<Val, Err> {
 /* === Methods === */
@@ -42,6 +45,14 @@ abstract Deferred<Val, Err> (IDeferred<Val, Err>) from IDeferred<Val, Err> to ID
 
 /* === Factories === */
 
+    public static function ofResolution<R, E>(resolution:DeferredResolution<R, E>):Deferred<R, E> {
+        switch resolution {
+            case _:
+                //
+        }
+        return new SyncDeferred(resolution);
+    }
+
     @:from
     public static inline function resolution<V,E>(res: DeferredResolution<V, E>):Deferred<V, E> {
         return new SyncDeferred( res );
@@ -75,10 +86,10 @@ abstract Deferred<Val, Err> (IDeferred<Val, Err>) from IDeferred<Val, Err> to ID
     }
 
     //public static function mAsync<V, E>(exec:(yes:V->Void, nah:E->Void)->Void):Deferred<V, E> {
-    @:from
-    public static function asyncBase<V, E>(exec:(dv: AsyncDeferred<V, E>) -> Void):Deferred<V, E> {
+    // @:from
+    public static function asyncBase<V, E>(exec:(dv:AsyncDeferred<V, E>)->Void, sync:Bool=false):Deferred<V, E> {
         var out = new AsyncDeferred<V, E>();
-        exec( out );
+        exec(out);
         return out;
     }
 
@@ -180,7 +191,16 @@ class SyncDeferred<V, E> implements IDeferred<V, E> {
 class AsyncDeferred<V, E> implements IDeferred<V, E> {
     public function new() {
         state = Pending;
-        rs = new Signal();
+        // this.trigger = FutureDeferred.trigger();
+        this.t = new DTrigger();
+        this.future = FutureDeferred.async(function(set) {
+            t.listen(function() {
+                set(switch state {
+                    case Resolved(r): r;
+                    default: throw new pm.Error.WTFError();
+                });
+            });
+        });
     }
 
     public function handle(cb: Callback<DeferredResolution<V, E>>):Void {
@@ -189,8 +209,7 @@ class AsyncDeferred<V, E> implements IDeferred<V, E> {
                 cb.invoke( res );
 
             default:
-                assert(rs != null, '[rs] should be populated');
-                rs.listen( cb );
+                future.handle(cb);
         }
     }
 
@@ -199,44 +218,43 @@ class AsyncDeferred<V, E> implements IDeferred<V, E> {
             !state.match(Resolved(_)), 
             new InvalidOperation('Deferred<*, *> instance is already resolved; cannot resolve again')
         );
-
-        var res;
-        state = Resolved(res=Result( x ));
-        rs.broadcast( res );
-        rs.dispose();
-        rs = null;
+        triggerWithResolution(Result(x));
     }
 
     public function fail(x: E) {
         assert(!state.match(Resolved(_)), new InvalidOperation('Deferred<*, *> instance is already resolved; cannot resolve again'));
-
-        var res;
-        state = Resolved(res=Exception( x ));
-        rs.broadcast( res );
-        rs.dispose();
-        rs = null;
+        triggerWithResolution(Exception(x));
     }
 
-    public function resolve(outcum: Outcome<V, E>) {
-        var res;
-        state = Resolved(res = switch outcum {
-            case Success(r): Result(r);
-            case Failure(e): Exception(e);
+    public inline function triggerWithResolution(resolution: DeferredResolution<V, E>) {
+        // var res;
+        state = Resolved(resolution);
+        trigger(switch resolution {
+            case Result(r): Success(r);
+            case Exception(e): Failure(e);
         });
-        rs.broadcast(res);
-        rs.dispose();
-        rs = null;
     }
 
-    //@:noCompletion
-    //public var _handler(default, set):(r: DeferredResolution<V, E>)->Void;
-    //private function set__handler(hfn) {
-        
-    //}
+
+    public function trigger(outcome: Outcome<V, E>) {
+        // var res;
+        // state = Resolved(res = switch outcum {
+        //     case Success(r): Result(r);
+        //     case Failure(e): Exception(e);
+        // });
+
+        t.trigger(outcome);
+
+    }
+    @:deprecated('resolve is deprecated. Use .trigger instead')
+    public inline function resolve(o) {
+        trigger(o);
+    }
 
     public var state(default, null): DeferredState<V, E>;
-
-    private var rs(default, null): Null<Signal<DeferredResolution<V, E>>> = null;
+    // private var trigger:pm.async.impl.Future.FutureTrigger<DeferredResolution<V, E>>;
+    public var t(default, null): DTrigger<V, E>;
+    private var future(default, null):pm.async.impl.Future<DeferredResolution<V, E>>;
 }
 
 interface IDeferred<Value, Except> {
