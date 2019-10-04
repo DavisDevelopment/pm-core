@@ -16,6 +16,7 @@ using StringTools;
  * 
  * @author Ryan Davis
  */
+@:keep
 class HashCode {
     /**
      * Bernstein hash
