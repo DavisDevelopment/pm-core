@@ -22,6 +22,11 @@ class Functions {
         return SlambdaMacro.f(fn, rest);
     }
 
+    // public macro static function with(context:Expr, body:Expr) {
+    //     var new_body:Expr = pmdb.utils.macro.Exprs.replace(body, macro _, context);
+    //     return macro $new_body;
+    // }
+
     @:noUsing
     public static macro function compose(args: Array<Expr>) {
         return args.reduce(function(out:Expr, arg:Expr):Expr {
@@ -130,7 +135,7 @@ class VMonads {
         return x;
     }
 
-    public static function once<T>(fn: T->Void):T->Void {
+    public static inline function once<T>(fn: T->Void):T->Void {
         return function(v: T) {
             var t = fn;
             fn = noop;
@@ -138,7 +143,7 @@ class VMonads {
         }
     }
 
-    public static function chain<T>(monad:T -> Void):T -> T {
+    public static inline function chain<T>(monad:T -> Void):T -> T {
         return function(x: T):T {
             monad( x );
             return x;
