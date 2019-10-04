@@ -254,11 +254,14 @@ class NextStream<I, Q> extends StreamBase<I, Q> {
     }
 
     override function forEach<Safety>(handler: Handler<I, Safety>):Next<Conclusion<I, Safety, Q>> {
-        return future.derive(function(root, accept, reject) {
-            root.then(function(stream) {
-                stream.forEach(handler).then(accept, reject);
-            }, reject);
+        return future.flatMap(function(stream) {
+            return Promise.async(function(done) stream.forEach(handler).handle(done));
         });
+        // return future.derive(function(root, accept, reject) {
+        //     root.then(function(stream) {
+        //         stream.forEach(handler).then(accept, reject);
+        //     }, reject);
+        // });
     }
 }
 
@@ -702,17 +705,26 @@ abstract Reducer<Item, Safety, Result> (Result -> Item -> Next<ReductionStep<Saf
     @:from
     public static function plain<Item, Q, Acc>(f: Acc->Item->Next<Acc>):Reducer<Item, Q, Acc> {
         return new Reducer(function(acc:Acc, item:Item) {
-            return f(acc, item).derive(function(_, accept, reject) {
-                _.handle(function(result: Outcome<Acc, Dynamic>) {
-                    switch result {
-                        case Success( acc ):
-                            accept(Progress( acc ));
+            return (f(acc, item) : Promise<Acc>).next(function(o) {
+                switch o {
+                    case Success(acc):
+                        return Promise.resolve(Progress(acc));
 
-                        case Failure( err ):
-                            accept(Crash( err ));
-                    }
-                });
+                    case Failure(err):
+                        return Promise.resolve(Crash(err));
+                }
             });
+            // return f(acc, item).derive(function(_, accept, reject) {
+            //     _.handle(function(result: Outcome<Acc, Dynamic>) {
+            //         switch result {
+            //             case Success( acc ):
+            //                 accept(Progress( acc ));
+
+            //             case Failure( err ):
+            //                 accept(Crash( err ));
+            //         }
+            //     });
+            // });
         });
     }
 }
@@ -873,6 +885,10 @@ abstract Next<T> (Promise<T>) from Promise<T> to Promise<T> {
     }
 
 /* === Casting/Factories === */
+
+    @:from public static inline function fromHandle<T>(h: pm.async.impl.PromiseHandle<T>):Next<T> {
+        return (h : Promise<T>);
+    }
 
     @:from
     public static inline function fromLazy<T>(value: Lazy<T>):Next<T> {
