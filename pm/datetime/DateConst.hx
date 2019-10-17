@@ -1,4 +1,4 @@
-package pm.time;
+package pm.datetime;
 
 class DateConst {
     public inline static var millisPerSecond : Float = 1000;
