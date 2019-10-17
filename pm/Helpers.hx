@@ -36,6 +36,13 @@ class Helpers {
         return if (a == null) b else a;
     }
 
+    public static inline function nn<T>(v:Null<T>):Bool
+        return null != v;
+
+    public static inline function nnSlow<T>(v: Null<T>):Bool {
+        return !(Type.typeof(v).match(Type.ValueType.TNull));
+    }
+
     public static function tap<T>(x:T, fn:T->Void):T {
         fn( x );
         return x;
