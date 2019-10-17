@@ -29,6 +29,27 @@ class Error {
     public var name(default, null): String;
     public var message(default, null): String;
     public var position(default, null): PosInfos;
+
+/* === Statics === */
+
+    public static function fromDynamic(x:Dynamic, ?pos:PosInfos):Error {
+        if (Std.is(x, Error))
+            return cast x;
+        return new ErrorWrapper(""+x, x, pos);
+    }
+    public static function wrapDynamic(x:Dynamic, ?pos:PosInfos):Error {
+        return switch Type.typeof(x) {
+            case TClass(_)|TObject|TUnknown:
+                @:privateAccess {
+                    var err = fromDynamic(x, pos);
+                    err.name = Helpers.nor(Reflect.getProperty(x, 'name'), err.name);
+                    err.message = Helpers.nor(Reflect.getProperty(x, 'message'), err.message);
+                    err;
+                }
+            case _: fromDynamic(x);
+            // case 
+        }
+    }
 }
 
 class ValueError<T> extends Error {
@@ -53,5 +74,14 @@ class InvalidOperation<T> extends Error {
         super(msg, type, pos);
         this._op = op;
         this.op = '$_op';
+    }
+}
+
+class ErrorWrapper extends pm.Error {
+    public var innerError: Dynamic;
+    
+    public function new(message:String, inner, ?pos) {
+        super(message, null, pos);
+        this.innerError = inner;
     }
 }
