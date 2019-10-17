@@ -7,6 +7,12 @@ class Numbers {
     public static inline function inRange<T:Float>(n:T, min:T, max:T):Bool {
         return (n >= min && n <= max);
     }
+
+    @:nullSafety(Off)
+    public static function isValidNumericValue<T:Float>(n: T):Bool {
+      var asFloat:Float = (1.0 + cast(n, Float)) - 1.0;
+      return Math.isFinite(asFloat) && !Math.isNaN(asFloat);
+    }
 }
 
 class Ints {
@@ -57,6 +63,27 @@ class Floats {
       r -= turn;
     return r;
   }
+
+  #if !js @:generic #end
+  public inline static function lpad<T:Float>(n:T, c:String, size:Int):String {
+    var s = '$n';
+    #if debug if (!Numbers.isValidNumericValue(size) || size < 0 || c.length >= size) throw new pm.Error.WTFError('Make some sense'); #end
+    while (s.length < size)
+      s = c + s;
+    return s;
+  }
+
+	#if !js @:generic #end
+	public inline static function rpad<T:Float>(n:T, c:String, size:Int):String {
+		var s = '$n';
+		#if debug
+		if (!Numbers.isValidNumericValue(size) || size < 0 || c.length >= size)
+			throw new pm.Error.WTFError('Make some sense');
+		#end
+		while (s.length < size)
+			s += c;
+		return s;
+	}
 
   public inline static function toPrecision(n:Float, precision:Int = 2):Float {
       return (
