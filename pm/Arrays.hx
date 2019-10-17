@@ -119,6 +119,9 @@ class Arrays {
         return ;
     }
 
+    /**
+      [NOTE] would `blit(alloc(a.length), 0, a, 0, a.length)` be faster?
+     **/
     public static function nullify<T>(a: Array<T>) {
         fill(a, null);
     }
@@ -195,12 +198,17 @@ class Arrays {
                 return a.every( fn );
             }
         #else
-            for (x in a)
-                if (!fn( x ))
-                    return false;
-            return true;
+            var r = true;
+            for (x in a) 
+                if (!fn( x )) {
+                    // return false;
+                    r = false;
+                    break;
+                }
+            return r;
         #end
     }
+    public static inline function all<T>(array:Array<T>, f:T->Bool):Bool return #if !js inline #end every(array, f);
 
     #if js inline #end
     public static function flatMap<I, O>(a:Array<I>, fn:I -> Array<O>):Array<O> {
