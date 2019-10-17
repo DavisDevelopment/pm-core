@@ -157,6 +157,14 @@ class Arrays {
         #end
     }
 
+    public static inline function reducei<A, B>(array:Array<A>, reducer:B->A->Int->B, init:B):B {
+        var result:B = init;
+        for (i in 0...array.length) {
+            result = reducer(result, array[i], i);
+        }
+        return result;
+    }
+
     #if js inline #end
     public static function reduceRight<A, B>(a:Array<A>, fn:B->A->B, agg:B):B {
         #if js
