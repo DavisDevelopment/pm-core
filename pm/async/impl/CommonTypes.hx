@@ -249,6 +249,7 @@ typedef SyncPromiseOptions<T> = {
 /**
   static class of base implementations for Promise methods
  **/
+@:expose
 class CommonPromiseMethods {
     public static function merge<T1, T2, Out>(a:PromiseObject<T1>, b:PromiseObject<T2>, combiner:Combiner<T1, T2, Out>):PromiseObject<Out> {
         return @:privateAccess NPromise.createAsync(function(done) {

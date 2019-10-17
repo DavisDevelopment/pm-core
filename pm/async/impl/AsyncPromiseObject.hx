@@ -21,12 +21,11 @@ class BaseAsyncPromiseObject<T> /*implements PromiseObject<T>*/ {
     public var outcome(default, null):Null<Outcome<T, Dynamic>> = null;
 	public var options(default, null):AsyncPromiseOptions<T>;
 	public var isAsync(get, never):Bool;
-	private var _isAsync: Bool;
 
+	private var _isAsync: Bool;
 	private var __status : Status<T> = Pending;
     private var __value : Null<T> = null;
     private var __error : Null<Dynamic> = null;
-
 	private var _onAddListener:Void -> Void;
 	private var _onBecomeSync:Void -> Void;
 

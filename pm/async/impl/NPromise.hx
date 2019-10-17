@@ -9,6 +9,8 @@ import pm.async.impl.JsPromiseObject;
 using pm.Arrays;
 using pm.Iterators;
 
+@:runtimeValue
+@:expose('pm.async.impl.NPromise')
 @:forward(isAsync, simplify)
 abstract NPromise<T>(PromiseObject<T>) from PromiseObject<T> to PromiseObject<T> {
 	/* === [Instance Fields] === */
@@ -97,12 +99,26 @@ abstract NPromise<T>(PromiseObject<T>) from PromiseObject<T> to PromiseObject<T>
 		});
 	}
 
+	// public static function inParallel<T>(a:Array<NPromise<T>>):NPromise<Array<T>> {
+	// 	//
+	// }
+
 	public static function inParallel<T>(a:Array<NPromise<T>>, ?concurrency:Int, ?lazy:Bool):NPromise<Array<T>> {
 		if (a.length == 0) {
 			return resolve(new Array<T>());
-		} else {
+		} 
+		else {
 			var exec:Callback<Callback<Outcome<Array<T>, Dynamic>>> = function(cb:Callback<Outcome<Array<T>, Dynamic>>) {
-				var result:Array<T> = [], pending = a.length, links:CallbackLink = null, linkArray = [], sync = false, i = 0, iter = a.iterator(), next = null;
+				Console.debug('inParallel.exec called');
+				var result:Array<T> = [],
+ 					pending = a.length,
+					links:CallbackLink = null,
+					linkArray = [],
+					sync = false,
+					i = 0,
+					iter = a.iterator(),
+					next = null;
+				
 				function done(o) {
 					if (links == null)
 						sync = true;
@@ -110,31 +126,43 @@ abstract NPromise<T>(PromiseObject<T>) from PromiseObject<T> to PromiseObject<T>
 						links.cancel();
 					cb(o);
 				}
+
 				function fail(e:Dynamic) {
 					pending = 0;
 					done(Failure(e));
 				}
+
 				inline function hasNext() {
 					return iter.hasNext() && pending > 0;
 				}
+
 				function set(index:Int, value) {
 					result[index] = value;
+					// trace('inParallel($index/${a.length} => ${value})');
+
 					if (--pending == 0)
 						done(Success(result));
 					else if (hasNext())
 						next();
+					else
+						throw 'betty';
 				}
-				next = function() {
-					var index = i++;
-					linkArray.push(iter.next().handle(function(o:Outcome<T, Dynamic>) {
-						switch o {
-							case Success(res):
-								set(index, res);
 
-							case Failure(error):
-								fail(error);
-						}
-					}));
+				next = function() {
+					var index = i++,
+						promise = iter.next();
+						// Console.debug('listening to promises[$index]');
+					linkArray.push(
+						promise.handle(function(o:Outcome<T, Dynamic>) {
+							switch o {
+								case Success(res):
+									set(index, res);
+
+								case Failure(error):
+									fail(error);
+							}
+						})
+					);
 				}
 
 				while (hasNext() && (concurrency == null || concurrency-- > 0)) {
@@ -175,6 +203,35 @@ abstract NPromise<T>(PromiseObject<T>) from PromiseObject<T> to PromiseObject<T>
 		ctor(t);
 		return t.asPromise();
 	}
+
+	#if js
+
+	@:to
+	public static inline function toJsPromise<T>(self:NPromise<T>):js.lib.Promise<T> {
+		return new js.lib.Promise(function(resolve, reject) {
+			self.then(resolve, reject);
+		});
+	}
+
+	@:from
+	public static function ofJsPromise<T>(native: js.lib.Promise<T>):NPromise<T> {
+		return ofPromiseObject(new pm.async.impl.JsPromiseObject(native));
+	}
+
+	public static inline function ofJsThenable<T>(o: js.lib.Promise.Thenable<T>):NPromise<T> {
+		return ofJsPromise(js.lib.Promise.resolve(o));
+	}
+
+	public static function wrapJsPromiseAroundPromise<T>(p: NPromise<T>):NPromise<T> {
+		if (((p : PromiseObject<T>) is JsPromiseObject<T>)) {
+			return p;
+		}
+		else {
+			return ofJsPromise(p.toJsPromise());
+		}
+	}
+
+	#end
 
 	@:from
 	static inline function ofPromiseObject<T>(p: PromiseObject<T>):NPromise<T> {
@@ -234,15 +291,25 @@ abstract NPromise<T>(PromiseObject<T>) from PromiseObject<T> to PromiseObject<T>
         return createFromResultMonad(cast exec);
     }
 
-    public static inline function createSync<T>(outcome:Lazy<Outcome<T, Dynamic>>, ?options):NPromise<T> {
+    public static inline function createSync<T>(outcome:Lazy<Outcome<T, Dynamic>>, ?options:SyncPromiseOptions<T>):NPromise<T> {
         return CommonPromiseMethods.createSync(outcome, options);
     }
 
+	public static var WRAP_SYNC = false;
+
 	@:from
-	public static inline function sync<T>(outcome:Lazy<Outcome<T, Dynamic>>):NPromise<T> {
-		return createAsync(function(done) {
-			done(outcome);
-		});
+	public static function sync<T>(outcome: Lazy<Outcome<T, Dynamic>>):NPromise<T> {
+		if (!WRAP_SYNC) {
+			return createSync(outcome, {
+				wrapAsync: false,
+				useAsyncCallbacks: false
+			}); 
+		}
+		else {
+			return createAsync(function(done) {
+				done(outcome);
+			});
+		}
 	}
 
 	@:from

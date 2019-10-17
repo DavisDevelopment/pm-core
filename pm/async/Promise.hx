@@ -1,7 +1,9 @@
 package pm.async;
 
+import haxe.Timer;
 import haxe.ds.Either;
 import haxe.ds.Option;
+
 import pm.async.Callback;
 import pm.async.impl.*;
 using pm.async.impl.CommonTypes;
@@ -50,11 +52,70 @@ abstract Promise<T> (PromiseHandle<T>) from PromiseHandle<T> to PromiseHandle<T>
         });
     }
 
-    public function inspect(?pos: haxe.PosInfos):Promise<T> {
+    public function inspect(?pos:haxe.PosInfos):Promise<T> {
         this.handle(function(outcome) {
             trace(outcome, pos);
         });
         return this;
+    }
+
+    public function timeout(milliseconds:Int, outcome:Lazy<Outcome<T, Dynamic>>):Promise<T> {
+        return withTimeout(this, milliseconds, {outcome:outcome});
+    }
+
+    public function failAfter(ms:Int, ?error:Dynamic, ?pos:haxe.PosInfos):Promise<T> {
+        return timeout(ms, Failure(error != null ? error : new Error('Promise timed out', null, pos)));
+    }
+
+    public static function delayedSync<T>(time_ms:Int, outcome:Lazy<Outcome<T,Dynamic>>, ?timerHook:Timer->Void):Promise<T> {
+        return async(function(yeet) {
+            var yeet = ()->yeet(outcome.get());
+            var t = haxe.Timer.delay(yeet, time_ms);
+            if (timerHook != null) timerHook(t);
+        });
+    }
+
+    public static function withTimeout<T>(self:Promise<T>, time_ms:Int, o:{?outcome:Outcome<T,Dynamic>, ?delegate:Promise<T>}):Promise<T> {
+        // var time_ms:Int = Math.round(seconds * 1000);
+        var trigger = NPromise.trigger();
+        var timerHasRung = false;
+        var timer = new haxe.Timer(time_ms);
+        timer.run = function() {
+            timerHasRung = true;
+            switch o {
+                case {delegate:null, outcome:null}:
+                    trigger.reject('invalid options object');
+
+                case {outcome:o}:
+                    switch o {
+                        case Success(v):
+                            trigger.resolve(v);
+                        case Failure(e):
+                            trigger.reject(e);
+                    }
+
+                case {delegate: delegate}:
+                    delegate.then(trigger.resolve, trigger.reject);
+
+                default:
+                    throw 'how dare u';
+            }
+        };
+        self.always(function() {
+            if (!timerHasRung) {
+                timer.stop();
+            }
+        });
+        self.then(
+            function(result){
+                trigger.resolve(result);
+            },
+            function(error) {
+                trigger.reject(error);
+            }
+        );
+
+        return Promise.ofPromiseObject(trigger.asPromise());
     }
 
     public static function all<T>(promises: Array<Promise<T>>):Promise<Array<T>> {
@@ -92,6 +153,19 @@ abstract Promise<T> (PromiseHandle<T>) from PromiseHandle<T> to PromiseHandle<T>
             });
         };
     }
+    @:from public static inline function asyncMonad(monad: AsyncMonad):Promise<Noise> {
+        return Promise.async(function(done) {
+            return monad.call(function(outcome) {
+                switch outcome {
+                    case Some(v):
+                        done(Failure(v));
+
+                    case None:
+                        done(Success(Noise.createByIndex(0)));
+                }
+            });
+        });
+    }
     @:from public static inline function createSync<T>(outcome: Lazy<Outcome<T, Dynamic>>):Promise<T> {
         return create(NPromise.sync(outcome));
     }
@@ -109,11 +183,12 @@ abstract Promise<T> (PromiseHandle<T>) from PromiseHandle<T> to PromiseHandle<T>
         });
     }
 
-    @:from public static function resolve<T>(value: T):Promise<T> {
+    @:from 
+    public static function resolve<T>(value: T):Promise<T> {
         return NPromise.resolve(value);
     }
     
-    public static function reject<T>(error: Dynamic):Promise<T> {
+    public static function reject<T>(error:Dynamic, ?pos:haxe.PosInfos):Promise<T> {
         return NPromise.reject(error);
     }
 
@@ -125,5 +200,21 @@ abstract Promise<T> (PromiseHandle<T>) from PromiseHandle<T> to PromiseHandle<T>
             return (x : PromiseObject<Dynamic>);
         }
         return reject('Invalid value $x');
+    }
+}
+
+private typedef Am = (callback:(outcome: Option<Dynamic>)->Void)->Void;
+@:callable
+@:forward
+abstract AsyncMonad (Am) from Am to Am {
+    @:from public static inline function jsStyle(exec: (error: Null<Dynamic>)->Void):AsyncMonad {
+        return function(callback: Option<Dynamic>->Void) {
+            return exec(function(error) {
+                return switch error {
+                    case null: Option.None;
+                    default: Some(error);
+                }
+            });
+        };
     }
 }
