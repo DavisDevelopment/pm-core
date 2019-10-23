@@ -14,6 +14,10 @@ class Functions {
         return value;
     }
 
+    public static function equality<T>(a:T, b:T):Bool {
+        return a == b;
+    }
+
     public static function noop():Void {
         // betty
     }
