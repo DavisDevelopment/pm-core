@@ -12,6 +12,10 @@ class Strings {
         return s == null || s.length == 0;
     }
 
+    public static inline function nullEmpty(s: String):Null<String> {
+        return empty(s) ? null : s;
+    }
+
     public static inline function before(s:String, del:String):String {
         return s.substring(0, s.indexOf( del ));
     }
