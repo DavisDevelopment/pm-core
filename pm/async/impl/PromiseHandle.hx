@@ -14,7 +14,7 @@ import pm.Assert.assert;
 using pm.Functions;
 
 @:forward
-@:forwardStatics(wrap)
+@:forwardStatics(wrap, reduce)
 @:access(pm.async.impl.PromiseHandle.PromiseHandleObject)
 abstract PromiseHandle<T>(PromiseHandleObject<T>) from PromiseHandleObject<T> to PromiseHandleObject<T> {
     public inline function new(promise: NPromise<T>) {
@@ -89,7 +89,7 @@ class PromiseHandleObject<T> {
         return wrap(promise.merge(other.promise, merger));
     }
 
-    public inline function noisify():PromiseHandle<Noise> {
+    public inline function noisify():PromiseHandle<pm.Noise> {
         return wrap(promise.noisify());
     }
 
@@ -214,4 +214,27 @@ class PromiseHandleObject<T> {
             return new PromiseHandleObject(p).simplify();    
         }
     }
+
+	public static function reduce<T, Agg>(array:Iterable<Promise<T>>, reducer:Agg->Outcome<T, Dynamic>->Agg, init:Agg):Promise<Agg> {
+		var iter = array.iterator();
+		var masterAgg:Agg = init;
+		var trigger = Promise.trigger();
+		function next() {
+			if (iter.hasNext()) {
+                trace('aww, yie');
+				iter.next().handle(o -> {
+					masterAgg = reducer(masterAgg, o);
+					Defer.defer(next);
+				});
+			} 
+            else {
+                trace('dat\'s done, sha');
+				trigger.resolve(masterAgg);
+			}
+		}
+
+		var promise = Promise.createFromTrigger(trigger);
+		next();
+		return promise;
+	}
 }
