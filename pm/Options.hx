@@ -5,6 +5,8 @@ import haxe.ds.Option;
 import pm.Lazy;
 import pm.Error;
 
+using pm.Options;
+
 class Options {
     public static function isSome<T>(o: Option<T>):Bool {
         return o.match(Some(_));
@@ -65,10 +67,19 @@ class Options {
 }
 
 class Options2 {
-    public static function or<T>(o:Option<T>, defaultValue:T):Option<T> {
+    public static function or<T>(o:Option<T>, defaultValue:OptionAlternative<T>):Option<T> {
         return switch o {
-            case None: Some( defaultValue );
+            case None: defaultValue.toOption();
             default: o;
+        }
+    }
+    public static function touch<T>(o:Option<T>, notNull:Bool=true, ?pos:haxe.PosInfos):T {
+        return switch o {
+            case Some(null) if (notNull):
+                throw new pm.Error('Option.Some\'s value was null', null, pos);
+            case Some(value): value;
+            case None:
+                throw new pm.Error('Option.None', 'InvalidArgument', pos);
         }
     }
 }
@@ -76,5 +87,21 @@ class Options2 {
 class Nullables {
     public static inline function opt<T>(v: Null<T>):Option<T> {
         return v == null ? None : Some( v );
+    }
+}
+
+@:forward
+abstract OptionAlternative<T> (Option<Lazy<T>>) from Option<Lazy<T>> {
+    @:to public inline function toOption():Option<T> {
+        return this.map(lazy -> lazy.get());
+    }
+    @:from public static inline function lazy<T>(value: Lazy<T>):OptionAlternative<T> {
+        return Some(value);
+    }
+    @:from public static inline function getter<T>(getter: Void->T):OptionAlternative<T> {
+        return Some(Lazy.ofFn(getter));
+    }
+    @:from public static inline function const<T>(value: T):OptionAlternative<T> {
+        return lazy(Lazy.ofConst(value));
     }
 }
