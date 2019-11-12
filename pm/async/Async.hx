@@ -281,7 +281,7 @@ typedef Va = VoidAsync;
 @:using(pm.async.Async.VoidAsyncs)
 abstract VoidAsync(TF1) from TF1 to TF1 {
     @:op(A & B)
-    public static inline function join(a:VoidAsync, b:VoidAsync):VoidAsync {
+    public static inline function andThen(a:VoidAsync, b:VoidAsync):VoidAsync {
         return function(done: VCb) {
             a(function(res) {
                 if (res.isSome())
@@ -293,10 +293,14 @@ abstract VoidAsync(TF1) from TF1 to TF1 {
         }
     }
 
-    @:from public static inline function make(fn: VCb -> Void):VoidAsync {
+    @:from 
+    public static inline function make(fn: VCb -> Void):VoidAsync {
         return function(cb: VCb) {
             fn(cb);
         }
+    }
+    @:from public static inline function ofCallback(cb: Callback<VCb>):VoidAsync {
+        return make(cb);
     }
 
     @:from public static function jsStyle(fn: (done: (error:Null<Dynamic>)->Void)->Void):VoidAsync {
@@ -325,6 +329,13 @@ abstract VoidAsync(TF1) from TF1 to TF1 {
                 }
             });
         }
+    }
+
+    public static inline function sequence(array:Array<VoidAsync>):VoidAsync {
+        return (done:VCb)->VoidAsyncs.queue(array, done);
+    }
+    public static inline function volley(array:Array<VoidAsync>):VoidAsync {
+        return (done:VCb)->VoidAsyncs.pool(array, done);
     }
 }
 
@@ -398,4 +409,34 @@ class VoidAsyncs {
             pool(elems.map(make), done);
         }
     }
+
+    /**
+      [TODO] allow concurrency
+     **/
+	public static function buildQueue(ctor:(append:VoidAsync->Void, end:VCb)->Void, concurrency:Int=-1) {
+        var queue:Array<VoidAsync> = new Array();
+        var complete:VCb = VCb.ignoreError(Functions.noop);
+        function append(task: VoidAsync) {
+            queue.push(task);
+        }
+        return VoidAsync.make(function(_complete:VCb) {
+            complete = _complete;
+            ctor(f -> append(f), function(error: Option<Dynamic>) {
+                if (error.isSome())
+                    return complete(error);
+                else {
+                    if (concurrency == -1)
+                        VoidAsyncs.queue(queue, complete);
+                    else {
+                        VoidAsyncs.queue(queue.chunk(concurrency).map(VoidAsync.volley), complete);
+                        // VoidAsyncs.pool(queue, complete);
+                    }
+                }
+            });
+        });
+    }
+}
+
+class PromisesMixin {
+    // public static inline function 
 }
