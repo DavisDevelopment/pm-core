@@ -1,5 +1,6 @@
 package pm.async;
 
+import pm.async.impl.PromiseObject.PromiseTriggerObject;
 import haxe.Timer;
 import haxe.ds.Either;
 import haxe.ds.Option;
@@ -15,6 +16,9 @@ import pm.Helpers.*;
 using pm.Functions;
 
 @:forward
+@:using(pm.async.impl.PromiseHandle)
+@:using(pm.async.Promises)
+@:using(pm.async.Promises.FunctionPromises)
 abstract Promise<T> (PromiseHandle<T>) from PromiseHandle<T> to PromiseHandle<T> {
     public var reference(get, never):PromiseHandle<T>;
     inline function get_reference() return (this : PromiseHandle<T>);
@@ -29,6 +33,26 @@ abstract Promise<T> (PromiseHandle<T>) from PromiseHandle<T> to PromiseHandle<T>
     public inline function then(onFulfilled, ?onError):Promise<T> {
         this.then(onFulfilled, onError);
         return this;
+    }
+
+    public inline function catchException(onError: Callback<Dynamic>):Promise<T> {
+        return handle(o -> switch o {
+            case Failure(e): onError(e);
+            default:
+        });
+    }
+
+    public function rescue(net: (error: Dynamic)->Option<Promise<T>>):Promise<T> {
+        return this.next(function(o) {
+            return switch o {
+                case Success(_): this;
+                case Failure(error):
+                    switch net(error) {
+                        case None: this;
+                        case Some(caught): caught;
+                    }
+            }
+        });
     }
     
     public inline function handle(onOutcome):Promise<T> {
@@ -53,8 +77,26 @@ abstract Promise<T> (PromiseHandle<T>) from PromiseHandle<T> to PromiseHandle<T>
     }
 
     public function inspect(?pos:haxe.PosInfos):Promise<T> {
+        var logFormatted = haxe.Log.formatOutput(null, pos);
+		var pattern = (~/((?:.+)\.hx:(\d+):\s*)null\s*$/gm);
+        pm.Assert.assert(pattern.match(logFormatted));
+        var prefix = pattern.matched(1);
+
         this.handle(function(outcome) {
+            #if Console.hx
+            switch outcome {
+                case Success(result):
+                    Console.success(
+                        <b>prefix</b>,
+                        result
+                    );
+
+                case Failure(error):
+                    Console.error(prefix, error);
+            }
+            #else
             trace(outcome, pos);
+            #end
         });
         return this;
     }
@@ -94,9 +136,6 @@ abstract Promise<T> (PromiseHandle<T>) from PromiseHandle<T> to PromiseHandle<T>
                             trigger.reject(e);
                     }
 
-                case {delegate: delegate}:
-                    delegate.then(trigger.resolve, trigger.reject);
-
                 default:
                     throw 'how dare u';
             }
@@ -121,6 +160,9 @@ abstract Promise<T> (PromiseHandle<T>) from PromiseHandle<T> to PromiseHandle<T>
     public static function all<T>(promises: Array<Promise<T>>):Promise<Array<T>> {
         var llAll = NPromise.inParallel(promises.map(p -> p.underlying));
         return create(llAll);
+    }
+    public static inline function reduce<T,Agg>(promises:Iterable<Promise<T>>, reducer, init:Agg):Promise<Agg> {
+        return Ph.reduce(promises, reducer, init);
     }
 
     @:from
@@ -169,10 +211,17 @@ abstract Promise<T> (PromiseHandle<T>) from PromiseHandle<T> to PromiseHandle<T>
     @:from public static inline function createSync<T>(outcome: Lazy<Outcome<T, Dynamic>>):Promise<T> {
         return create(NPromise.sync(outcome));
     }
-    @:from public static inline function sync<T>(outcome: Outcome<T, Dynamic>):Promise<T> {
+
+    /**
+      create a new synchronous `Promise<T>` instance which yields the given `Outcome<T,?>`
+     **/
+    @:from
+    public static function sync<T>(outcome: Outcome<T, Dynamic>):Promise<T> {
         return createSync(outcome);
     }
-    @:from public static function deferred<T>(deferred: Deferred<T, Dynamic>):Promise<T> {
+
+    @:from 
+    public static function deferred<T>(deferred: Deferred<T, Dynamic>):Promise<T> {
         return async(function(done) {
             deferred.handle(function(resolution) {
                 switch resolution {
@@ -182,6 +231,14 @@ abstract Promise<T> (PromiseHandle<T>) from PromiseHandle<T> to PromiseHandle<T>
             });
         });
     }
+
+#if js
+    @:from
+    public static function ofJsPromise<T>(promise: js.lib.Promise<T>):Promise<T> {
+        return ofPromiseObject(NPromise.ofJsPromise(promise));
+    }
+
+#end
 
     @:from 
     public static function resolve<T>(value: T):Promise<T> {
@@ -201,6 +258,15 @@ abstract Promise<T> (PromiseHandle<T>) from PromiseHandle<T> to PromiseHandle<T>
         }
         return reject('Invalid value $x');
     }
+
+    public static inline function trigger<T>():PromiseTriggerObject<T> {
+        return NPromise.trigger();
+    }
+    
+    @:from 
+    public static inline function createFromTrigger<T>(trigger: PromiseTriggerObject<T>):Promise<T> {
+        return ofPromiseObject(NPromise.createFromTrigger(trigger));
+    }
 }
 
 private typedef Am = (callback:(outcome: Option<Dynamic>)->Void)->Void;
@@ -218,3 +284,4 @@ abstract AsyncMonad (Am) from Am to Am {
         };
     }
 }
+typedef Ph<T> = pm.async.impl.PromiseHandle<T>;

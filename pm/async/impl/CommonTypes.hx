@@ -86,20 +86,27 @@ class FuturePromiseObject<T> implements PromiseObject<T> {
 	}
 }
 
+/**
+  a PromiseTrigger<T> which uses a Future as the underlying mechanism
+ **/
 class FuturePromiseTrigger<T> extends FuturePromiseObject<T> implements PromiseTriggerObject<T> {
-	var trigger:FutureTrigger<Outcome<T, Dynamic>>;
+	var t : FutureTrigger<Outcome<T, Dynamic>>;
 
 	public function new() {
-		this.trigger = Future.trigger();
-		super(trigger.asFuture());
+		this.t = Future.trigger();
+		super(t.asFuture());
 	}
 
 	public inline function resolve(res:T):Bool {
-		return trigger.trigger(Success(res));
+		return t.trigger(Success(res));
 	}
 
 	public inline function reject(err:Dynamic):Bool {
-		return trigger.trigger(Failure(err));
+		return t.trigger(Failure(err));
+	}
+
+	public inline function trigger(o: Outcome<T, Dynamic>):Bool {
+		return t.trigger(o);
 	}
 
 	public inline function asPromise():PromiseObject<T> {

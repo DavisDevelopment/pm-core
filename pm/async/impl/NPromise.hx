@@ -110,6 +110,7 @@ abstract NPromise<T>(PromiseObject<T>) from PromiseObject<T> to PromiseObject<T>
 		else {
 			var exec:Callback<Callback<Outcome<Array<T>, Dynamic>>> = function(cb:Callback<Outcome<Array<T>, Dynamic>>) {
 				Console.debug('inParallel.exec called');
+				a = a.copy();
 				var result:Array<T> = [],
  					pending = a.length,
 					links:CallbackLink = null,
@@ -133,7 +134,7 @@ abstract NPromise<T>(PromiseObject<T>) from PromiseObject<T> to PromiseObject<T>
 				}
 
 				inline function hasNext() {
-					return iter.hasNext() && pending > 0;
+					return iter.hasNext() || pending > 0;
 				}
 
 				function set(index:Int, value) {
@@ -142,17 +143,16 @@ abstract NPromise<T>(PromiseObject<T>) from PromiseObject<T> to PromiseObject<T>
 
 					if (--pending == 0)
 						done(Success(result));
-					else if (hasNext())
-						next();
-					else
-						throw 'betty';
+					else if (!hasNext()) {
+						Console.examine(pending, i, iter.hasNext());
+						throw new Error('Iteration has ended, but there are still pending promises(?)');
+					}
 				}
 
 				next = function() {
 					var index = i++,
 						promise = iter.next();
 						// Console.debug('listening to promises[$index]');
-					linkArray.push(
 						promise.handle(function(o:Outcome<T, Dynamic>) {
 							switch o {
 								case Success(res):
@@ -161,18 +161,12 @@ abstract NPromise<T>(PromiseObject<T>) from PromiseObject<T> to PromiseObject<T>
 								case Failure(error):
 									fail(error);
 							}
-						})
-					);
+						});
 				}
 
-				while (hasNext() && (concurrency == null || concurrency-- > 0)) {
+				while (iter.hasNext()) {
 					next();
 				}
-
-				links = linkArray;
-
-				if (sync)
-					links.cancel();
 			};
 
 			return NPromise.createAsync(exec);
@@ -184,8 +178,8 @@ abstract NPromise<T>(PromiseObject<T>) from PromiseObject<T> to PromiseObject<T>
 		@return a newly created `PromiseTriggerObject<T>`
 	**/
 	public static inline function trigger<T>():PromiseTriggerObject<T> {
-        #if !macro Console.warn('TODO: Create PromiseTrigger class built upon AsyncPromise'); #end
-		#if js
+        // #if !macro Console.warn('TODO: Create PromiseTrigger class built upon AsyncPromise'); #end
+		#if (poop && js)
 		return new JsPromiseTrigger();
 		#else
 		return new FuturePromiseTrigger();
@@ -295,7 +289,7 @@ abstract NPromise<T>(PromiseObject<T>) from PromiseObject<T> to PromiseObject<T>
         return CommonPromiseMethods.createSync(outcome, options);
     }
 
-	public static var WRAP_SYNC = false;
+	public static var WRAP_SYNC = true;
 
 	@:from
 	public static function sync<T>(outcome: Lazy<Outcome<T, Dynamic>>):NPromise<T> {

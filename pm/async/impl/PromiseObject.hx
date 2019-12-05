@@ -25,6 +25,7 @@ interface PromiseObject<T> {
 interface PromiseTriggerObject<T> {
 	function resolve(result:T):Bool;
 	function reject(error:Dynamic):Bool;
+	function trigger(outcome: Outcome<T, Dynamic>):Bool;
 	function asPromise():PromiseObject<T>;
 }
 

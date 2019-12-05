@@ -110,16 +110,6 @@ class BaseAsyncPromiseObject<T> /*implements PromiseObject<T>*/ {
 		return true;
 	}
 
-	/*
-	function __scheduleCallbackInvokation(listeners, tail:Void->Void) {
-		Defer.defer(() -> {
-			(listeners : CallbackList<Outcome<T, Dynamic>>).invoke(this.outcome);
-			tail();
-		});
-		Console.debug('listener count: ', listeners.length);
-	}
-	*/
-
 	/**
 	  internal method called to initialize [this] Promise
 	 **/

@@ -90,8 +90,18 @@ class JsPromiseObject<T> implements PromiseObject<T> {
         } : NPromise<O>);
     }
 
-    public inline function simplify():PromiseObject<T> {
-        return this;
+    @:keep
+    public function simplify():PromiseObject<T> {
+        return NPromise.async(function(done) {
+            toJsPromise(this).then(
+                function(result: T) {
+                    return Success(result);
+                },
+                error -> Failure(error)
+            ).then(function(outcome) {
+                done(outcome);
+            });
+        });
     }
 }
 
@@ -103,16 +113,29 @@ class JsPromiseTrigger<T> extends JsPromiseObject<T> implements PromiseTriggerOb
             _resolve = res;
             _reject = rej;
         });
+        jsp.catchError(function(error) {
+            Console.error(error);
+        });
         super(jsp);
     }
+    
     public inline function resolve(result: T):Bool {
         _resolve(result);
         return true;
     }
+
     public inline function reject(error: Dynamic):Bool {
         _reject(error);
         return true;
     }
+
+    public inline function trigger(outcome: Outcome<T, Dynamic>):Bool {
+        return switch outcome {
+            case Success(res): resolve(res);
+            case Failure(err): reject(err);
+        }
+    }
+
     public inline function asPromise():PromiseObject<T> {
         return this;
     }

@@ -222,7 +222,7 @@ abstract FeedPost<Item, Q> (FeedPostBase<Item, Q>) from FeedPostBase<Item, Q> to
                 return post.item();
 
             case PostDeferred(next):
-                return next.flatMap.fn(_.item());
+                return next.flatMap(x -> x.item());
         }
     }
 

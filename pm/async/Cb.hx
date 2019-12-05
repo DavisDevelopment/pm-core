@@ -2,6 +2,8 @@ package pm.async;
 
 import pm.HashKey;
 import pm.Arch;
+import pm.Error;
+import pm.Assert.assert;
 
 class CallbackHandle<T> {
     public inline function new(cb: T -> Void):Void {

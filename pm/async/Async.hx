@@ -1,11 +1,11 @@
 package pm.async;
 
-import pm.async.Stream.RealStream;
-import pm.async.Stream.Conclusion;
-import pm.async.Stream.Handled;
-import pm.async.Stream.Step;
+// import pm.async.Stream.RealStream;
+// import pm.async.Stream.Conclusion;
+// import pm.async.Stream.Handled;
+// import pm.async.Stream.Step;
 import pm.Functions.fn;
-import pm.async.Feed;
+// import pm.async.Feed;
 
 import pm.HashKey;
 import pm.LinkedQueue;
@@ -41,6 +41,7 @@ abstract Async<I, O>(AsyncObject<I, O>) from AsyncObject<I,O> to AsyncObject<I, 
         }
     }
 
+    /*
     public static function streamMap<In, Out>(async:Async<In, Out>, stream:pm.async.Stream.RealStream<In>):pm.async.Stream.RealStream<Out> {
         var outFeed:Feed<Out, Dynamic> = new Feed();
         stream.forEach(function(data: In) {
@@ -67,6 +68,7 @@ abstract Async<I, O>(AsyncObject<I, O>) from AsyncObject<I,O> to AsyncObject<I, 
         });
         return (outFeed.stream() : RealStream<Out>);
     }
+    */
 
 
 /* === Factories === */
@@ -74,6 +76,13 @@ abstract Async<I, O>(AsyncObject<I, O>) from AsyncObject<I,O> to AsyncObject<I, 
     @:from
     public static inline function make<I, O>(func: AsyncFn<I, O>):Async<I, O> {
         return new FuncAsync<I, O>(func);
+    }
+
+    // @:from
+    public static inline function ofPromiseReturningFunction<I, O>(func : I -> Promise<O>):Async<I, O> {
+        return make(function(i: I):Handle<O> {
+            return (func(i) : Handle<O>);
+        });
     }
 
     @:from
@@ -439,4 +448,77 @@ class VoidAsyncs {
 
 class PromisesMixin {
     // public static inline function 
+}
+
+class AsyncArrays {
+    public static function map<TIn, TOut>(array:Array<TIn>, f:TIn->Promise<TOut>, ?concurrency:Int) {
+        var output:Array<TOut> = pm.Arrays.alloc(array.length);
+        var trigger = Promise.trigger();
+        VoidAsyncs.buildQueue(function(add, run) {
+            for (i in 0...array.length) {
+                add(function(next) {
+                    f(array[i]).then(function(res) {
+                        output[i] = res;
+                        next(None);
+                    }, function(error) {
+                        next(Some(error));
+                    });
+                });
+            }
+            run(None);
+        }, concurrency)(function(?error:Dynamic) {
+            if (error != null) {
+                trigger.reject(error);
+            }
+            else {
+                trigger.resolve(output);
+            }
+        });
+        return Promise.createFromTrigger(trigger);
+    }
+
+    public static function filter<I>(a:Array<I>, f:F<I, Bool>, ?concurrency:Int) {
+        return mapfilter(a, function(x:I) {
+            return f(x).map(b -> b ? Some(x) : None);
+        });
+    }
+
+    public static function mapfilter<I, O>(a:Array<I>, f:F<I, Option<O>>, ?concurrency:Int, ?timeout:Int) {
+        var trigger = Promise.trigger();
+        var results:Array<O> = new Array();
+        var run = VoidAsyncs.buildQueue(function(add, start) {
+            for (i in 0...a.length) {
+                add(function(next) {
+                    var p = f(a[i]);
+                    if (timeout != null)
+                        p = p.failAfter(timeout);
+                    p.handle(function(o) {
+                        switch o {
+                            case Failure(err):
+                                next(Some(err));
+
+                            case Success(None):
+                                next(None);
+
+                            case Success(Some(x)):
+                                results.push(x);
+                                next(None);
+                        }
+                    });
+                });
+            }
+            start(None);
+        }, concurrency);
+        run(function(?error: Dynamic) {
+            if (error != null) trigger.reject(error);
+            else trigger.resolve(results);
+        });
+        return Promise.createFromTrigger(trigger);
+    }
+}
+
+@:forward
+@:callable
+private abstract F<I,O> (I -> Promise<O>) from I->Promise<O> to I->Promise<O> {
+
 }

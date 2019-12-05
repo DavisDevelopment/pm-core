@@ -50,4 +50,19 @@ class Helpers {
     public static inline function vtap<T>(x:T, fn:T -> Void):Void {
         return fn( x );
     }
+
+    /**
+      check for "strict equality" between `a` and `b`
+      this is only different from the `==` operator on `js` & `python` targets as of now
+        `js: a === b`
+        `py:(a is b)`
+     **/
+    public static function same<T>(a:T, b:T):Bool {
+        return
+        #if js js.Syntax.strictEq(a, b);
+        #elseif python untyped __python__('({0} is {1})', a, b);
+        #else (a == b);
+        #end
+    }
+    public static inline function strictEq<T>(a:T, b:T):Bool return inline Helpers.same(a, b);
 }

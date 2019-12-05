@@ -76,7 +76,9 @@ abstract Mapping<K, V>(PureList<MapEntry<K, V>>) from PureList<MapEntry<K, V>> t
     }
   }
   
-  @:to @:extern inline function getCondensed() {
+  @:to 
+  @:extern 
+  public inline function getCondensed() {
     return switch this.first() {
       case None: None;
       case Some({ condensed: c }) if (c != null): Some(c);
@@ -103,7 +105,7 @@ abstract Mapping<K, V>(PureList<MapEntry<K, V>>) from PureList<MapEntry<K, V>> t
 
   @:to 
   @:extern 
-  inline function toMutable():Map<K, V> {
+  public inline function toMutable():Map<K, V> {
     return getCondensed().map(function (m) return merge([m])).or(alloc).touch();
   }
 

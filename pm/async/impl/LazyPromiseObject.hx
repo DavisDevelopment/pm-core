@@ -1,6 +1,8 @@
 package pm.async.impl;
 
+import pm.Error.WTFError;
 import pm.async.impl.PromiseObject;
+import pm.async.impl.AsyncPromiseObject;
 import pm.async.impl.Defer;
 
 using pm.async.impl.CommonTypes;
@@ -17,46 +19,45 @@ import pm.Functions.noop;
 import pm.Functions.fn as mkfn;
 
 class BaseLazyPromise<T> {
-    public var execute: Callback<LazyTrigger<T>>;
+    public var execute: AsyncPromiseExecutor<T>;
     public var status: LazyPromiseStatus<T>;
+    public var asyncStatus: AsyncPromiseStatus<T>;
 
     function new() {
         execute = noop;
         status = Waiting;
     }
 
+    private static inline function asyncStatusFromStatus<T>(status: LazyPromiseStatus<T>):Null<AsyncPromiseStatus<T>> {
+        return switch status {
+            case Waiting: null;
+            case Pending: AsyncPromiseStatus.Pending;
+            case Cancelled: throw new pm.Error('Unreachable');
+            case Resolved(outcome): AsyncPromiseStatus.Resolved;
+        }
+    }
+
+    private function exec() {
+		var _resolve:Callback<Outcome<T, Dynamic>> = noop;
+		_resolve = function(o:Outcome<T, Dynamic>) {
+            this.status = Resolved(o);
+            _resolve = function(o: Outcome<T, Dynamic>) {
+                throw new WTFError();
+            };
+        };
+        this.execute(_resolve);
+    }
+
     public function run() {
         switch status {
             case Waiting:
-                var trigger = new LazyTrigger();
-                // init `trigger`
-                execute(trigger);
+                this.status = Pending;
+                this.exec();
 
             default:
                 throw new pm.Error('Invalid Promise Status: $status');
         }
     }
-}
-
-@:allow(pm.async.impl.LazyPromiseObject.BaseLazyPromise)
-class LazyTrigger<T> {
-    public var outcome:Option<Outcome<T, Dynamic>> = None;
-    public var isResolved(default, null): Bool = false;
-    public var isCancelled(default, null): Bool = false;
-    
-    public function new() {
-        //
-    }
-
-    public dynamic function resolve(outcome: Outcome<T, Dynamic>):Bool {
-
-    }
-    
-    @:native('_return')
-    public inline function yield(result: T):Void {
-        //
-    }
-
 }
 
 enum LazyPromiseStatus<T> {
