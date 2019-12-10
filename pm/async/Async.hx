@@ -444,6 +444,30 @@ class VoidAsyncs {
             });
         });
     }
+
+	public static function whilst(task:VoidAsync, condition:Void->Promise<Bool>, done:VCb) {
+		var tcb;
+
+		function maybeDo() {
+			condition().handle(o -> switch o {
+				case Success(true):
+					task(tcb);
+				case Success(false):
+					done(None);
+				case Failure(err):
+					done(Some(err));
+			});
+		}
+
+		tcb = function(?error:Dynamic) {
+			if (pm.Helpers.nn(error))
+				done(Some(error));
+			else
+				maybeDo();
+		};
+
+		maybeDo();
+	}
 }
 
 class PromisesMixin {
