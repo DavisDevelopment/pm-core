@@ -332,6 +332,12 @@ class Arrays {
         return null;
     }
 
+    public static function search<T>(a:Array<T>, f:T->Bool, ?r:Ref<T>):Bool {
+        for (x in a)
+            if (f(x)) {if (r != null) r.set(x); return true;}
+        return false;
+    }
+
     public static function take<T>(a:Array<T>, n:Int):Array<T> {
         return a.slice(0, n);
     }
