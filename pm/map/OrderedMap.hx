@@ -245,16 +245,11 @@ class OrderedMap<K, V> implements IMap<K, V> {
 	A tree node of `haxe.ds.BalancedTree`.
 **/
 private class TreeNode<K, V> {
-	@:native('l') 
 	public var left : TreeNode<K, V>;
-	@:native('r') 
 	public var right : TreeNode<K, V>;
-	@:native('k') 
 	public var key : K;
-	@:native('v') 
 	public var value : V;
 
-	@:native('lH')
 	#if as3
 	public
 	#end
@@ -274,16 +269,21 @@ private class TreeNode<K, V> {
 	extern public inline function get_height():Int
 		return this == null ? 0 : _height;
 
-	extern public inline function dispose() {
-		if (this != null) {
+	extern inline public function dispose() {
+		// if (this != null) {
+			_dispose();
+		// }
+	}
+	function _dispose() {
+		if (left != null)
 			left.dispose();
-			left = null;
+		left = null;
+		if (right != null)
 			right.dispose();
-			right = null;
-			key = null;
-			value = null;
-			_height = -1;
-		}
+		right = null;
+		key = null;
+		value = null;
+		_height = -1;
 	}
 
 	public function toString() {
