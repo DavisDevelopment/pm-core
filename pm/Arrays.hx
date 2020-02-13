@@ -360,6 +360,14 @@ class Arrays {
         }
         throw new Error('invalid');
     }
+
+    public static function repeat<T>(a:Array<T>, n:Int):Array<T> {
+        var res:Array<T> = a.copy();
+        --n;
+        while (n-- > 0)
+            res = res.concat(a.copy());
+        return res;
+    }
 }
 
 class Array2s {
