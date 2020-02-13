@@ -67,4 +67,28 @@ class Iterators {
             }
         }
     }
+
+    public static function all<T>(itr:Iterator<T>, test:T -> Bool):Bool {
+        for (x in itr)
+            if (!test(x))
+                return false;
+        return true;
+    }
+
+    public static function find<T>(a:Iterator<T>, fn:T -> Bool):Null<T> {
+        for (x in a)
+            if (fn( x ))
+                return x;
+        return null;
+    }
+
+    public static function search<T>(a:Iterator<T>, f:T->Bool, ?r:Ref<T>):Bool {
+        for (x in a) {
+            if (f(x)) {
+                if (r != null) r.set(x);
+                return true;
+            }
+        }
+        return false;
+    }
 }
