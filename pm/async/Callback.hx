@@ -33,15 +33,6 @@ abstract Callback<T> (T -> Void) from (T -> Void) {
         }
     }
 
-    /**
-      Seems useful, though most likely isn't
-     **/
-    @:to 
-    @:deprecated('Implicit cast from Callback<Noise> is deprecated. Please create an issue if you find it useful, and don\'t want this cast removed.')
-    static function ignore<T>(cb: Callback<Noise>):Callback<T> {
-        return function (_) cb.invoke(Noise);
-    }
-
     @:from 
     //inlining this seems to cause recursive implicit casts
     static function fromNiladic<A>(f: Void->Void):Callback<A> {

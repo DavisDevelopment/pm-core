@@ -1,6 +1,6 @@
 package pm;
 
-@:native('NoisyBoi')
+#if !macro @:native('NoisyBoi') #end
 enum Noise {
     Noise;
 }

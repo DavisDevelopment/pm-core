@@ -94,12 +94,10 @@ class BaseAsyncPromiseObject<T> /*implements PromiseObject<T>*/ {
 
 			if (tailListeners.length != 0) { // 
 				tailListeners.invokeAndClear(this.outcome);
-				Console.printlnFormatted('<#009,b>Tail Callbacks Invoked<//>');
 			}
 
 			// should no longer be possible to add new async listener
 			addListener = function(f) {
-				Console.error(new Die('Invalid call'));
 				Sys.exit(1);
 				return noop;
 			};

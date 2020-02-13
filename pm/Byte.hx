@@ -225,8 +225,9 @@ abstract Byte (Int) from Int to Int {
 	/* To java.lang.Byte */
 	@:to
 	public inline function toJavaByte():java.lang.Byte {
-		var _i:Int = asint;
-		return cast (untyped __java__('(byte) _i'));
+		// var _i:Int = asint;
+		return ((asint : java.types.Int8) : java.lang.Byte);
+		// return cast (untyped __java__('(byte) _i'));
 	}
 	#end
 

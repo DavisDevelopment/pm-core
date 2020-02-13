@@ -5,44 +5,54 @@ import pm.utils.Comparable;
 import pm.utils.ComparableOrd;
 
 abstract Ordering(OrderingImpl) from OrderingImpl to OrderingImpl {
-  public static function fromInt(value : Int) : Ordering
-    return value < 0 ? LT : (value > 0 ? GT : EQ);
+	@:from public static function fromInt(value : Int) : Ordering {
+		return value < 0 ? LT : (value > 0 ? GT : EQ);
+		// return OrderingImpl.clamp(value);
+    }
 
-  public static function fromFloat(value : Float) : Ordering
-    return value < 0 ? LT : (value > 0 ? GT : EQ);
+    @:from public static inline function fromFloat(value : Float) : Ordering {
+        return value < 0 ? LT : (value > 0 ? GT : EQ);
+    }
 
-  public function toInt() : Int
-    return switch this {
-      case LT: -1;
-      case GT: 1;
-      case EQ: 0;
-    };
+	@:to public function toInt():Int {
+		return switch this {
+			case LT: -1;
+			case GT: 1;
+			case EQ: 0;
+		};
+	}
 }
 
+#if (ordering_as_int && haxe4)
+enum abstract OrderingImpl (Int) to Int {
+	var LT = -1;
+	var EQ =  0;
+	var GT =  1;
+
+	public static function clamp(i: Int):OrderingImpl {
+		return (
+			if (i < 0) OrderingImpl.LT
+			else if (i > 0) OrderingImpl.GT
+			else OrderingImpl.EQ
+		);
+	}
+}
+#else
 enum OrderingImpl {
-  LT;
-  GT;
-  EQ;
+	LT;
+	GT;
+	EQ;
 }
+#end
 
 class Orderings {
-/*
-  public static var monoid(default, never): Monoid<Ordering> = {
-    zero: EQ,
-    append: function(o0: Ordering, o1: Ordering): Ordering return switch o0 {
-      case LT: LT;
-      case EQ: o1;
-      case GT: GT;
+	public static function negate(o: Ordering):Ordering {
+		return switch o {
+			case LT: GT;
+			case EQ: EQ;
+			case GT: LT;
+        };
     }
-  };
-
-  */
-
-  public static function negate(o: Ordering): Ordering return switch o {
-    case LT: GT;
-    case EQ: EQ;
-    case GT: LT;
-  };
 }
 
 class IntOrds {
@@ -52,6 +62,7 @@ class IntOrds {
 
 @:callable
 @:using(pm.Ord.Orderings)
+
 abstract Ord<A> (A -> A -> Ordering) from A -> A -> Ordering to A -> A -> Ordering {
     public function order(a0: A, a1: A): Ordering {
         return this(a0, a1);
@@ -75,13 +86,13 @@ abstract Ord<A> (A -> A -> Ordering) from A -> A -> Ordering to A -> A -> Orderi
 		return this(a0, a1) == EQ;
     }
 
-	public function contramap<B>(f:B->A):Ord<B> {//
-		return function(b0, b1) {
+	public function contramap<B>(f:B->A):Ord<B> {
+		return function(b0:B, b1:B) {
 			return this(f(b0), f(b1));
 		};
     }
 
-	public function inverse():Ord<A> {//
+    public function inverse():Ord<A> {
 		return function(a0:A, a1:A) {
 			return this(a1, a0);
 		};
@@ -95,11 +106,19 @@ abstract Ord<A> (A -> A -> Ordering) from A -> A -> Ordering to A -> A -> Orderi
 		};
     }
 
-	public static function fromIntComparison<A>(f:A->A->Int):Ord<A> {//
+    @:from
+    public static inline function fromIntComparison<A>(f:(A, A)->Int):Ord<A> {//
 		return function(a:A, b:A) {
 			return Ordering.fromInt(f(a, b));
 		};
-    }
+	}
+	
+	@:to
+	public static function toIntCompFn<T>(ord:Ord<T>):(T, T)->Int {
+		return function(l:T, r:T):Int {
+			return ord.order(l, r);
+		}
+	}
 
 	public static function forComparable<T:Comparable<T>>():Ord<T> {//
 		return function(a:T, b:T) {

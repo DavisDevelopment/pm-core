@@ -1,6 +1,11 @@
 package pm;
 
+#if macro
+import haxe.macro.Context;
 import haxe.macro.Expr;
+
+using haxe.macro.ExprTools;
+#end
 
 class Helpers {
     public static macro function matchFor<I, O>(e:ExprOf<Dynamic>, args:Array<Expr>) {
@@ -65,4 +70,76 @@ class Helpers {
         #end
     }
     public static inline function strictEq<T>(a:T, b:T):Bool return inline Helpers.same(a, b);
+
+
+}
+
+class MacroHelpers {
+    	/**
+	 * with
+	 * @author Simn <simon@haxe.org>
+	 * @link https://gist.github.com/Simn/87948652a840ff544a22
+	 */
+	macro public static function with(e1:Expr, el:Array<Expr>): Expr {
+		var tempName: String = 'tmp';
+		var acc: Array<Expr> = [
+			macro var $tempName = $e1
+		];
+		var eThis: Expr = macro $i{tempName};
+		for (e in el) {
+            var gs:String = null;
+            // e = e.replace(macro _, eThis);
+			var e = switch (e) {
+				case macro $i{s}($a{args}):
+                    gs = s;
+                    macro $eThis.$s($a{args});
+                
+				case macro $i{s} = $e:
+                    gs = s;
+                    macro $eThis.$s = $e;
+                    
+				case macro $i{s} += $e:
+                    gs = s;
+                    macro $eThis.$s += $e;
+                    
+				case macro $i{s} -= $e:
+                    gs = s;
+                    macro $eThis.$s -= $e;
+                    
+				case macro $i{s} *= $e:
+                    gs = s;
+                    macro $eThis.$s *= $e;
+                    
+				case macro $i{s} /= $e:
+                    gs = s;
+                    macro $eThis.$s /= $e;
+                    
+				case _:
+					Context.error("Don't know what to do with " + e.toString(), e.pos);
+            }
+
+            // var vars = Context.getLocalTVars();
+            // for (name=>tvar in vars) {
+            //     if (gs == name) {
+
+            //     }
+            // }
+            // try {
+            //     var tmp = macro @:pos(e.pos) $eThis.$s;
+            //     var te = Context.typeExpr(tmp);
+            //     trace(te);
+            //     var t = Context.typeof(tmp);
+            //     trace(t);
+            // }
+            // catch (err: Dynamic) {
+            //     // trace('Not found: $e');
+            //     Context.error('Not found: $err', e.pos);
+            //     // continue;
+            // }
+            
+			acc.push(e);
+        }
+        
+		return macro $b{acc};
+	}
 }

@@ -86,13 +86,10 @@ abstract Promise<T> (PromiseHandle<T>) from PromiseHandle<T> to PromiseHandle<T>
             #if Console.hx
             switch outcome {
                 case Success(result):
-                    Console.success(
-                        <b>prefix</b>,
-                        result
-                    );
+                    trace(result);
 
                 case Failure(error):
-                    Console.error(prefix, error);
+                    trace(prefix, error);
             }
             #else
             trace(outcome, pos);

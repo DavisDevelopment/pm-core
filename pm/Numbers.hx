@@ -3,10 +3,6 @@ package pm;
 import haxe.Int32;
 
 class Numbers {
-    #if !js @:generic #end
-    public static inline function inRange<T:Float>(n:T, min:T, max:T):Bool {
-        return (n >= min && n <= max);
-    }
 
     @:nullSafety(Off)
     public static function isValidNumericValue<T:Float>(n: T):Bool {
@@ -16,6 +12,9 @@ class Numbers {
 }
 
 class Ints {
+	public static inline function inRange(n:Int, min:Int, max:Int):Bool {
+		return (n >= min && n <= max);
+	}
     static public inline function modulo(x:Int, y:Int):Int {
         return ((x % y) + y) % y;
     }
@@ -51,6 +50,10 @@ class Floats {
   static var pattern_inf = ~/^\+?(inf|Inf|INF)$/;
   static var pattern_neg_inf = ~/^-(inf|Inf|INF)$/;
 
+	public static inline function inRange(n:Float, min:Float, max:Float):Bool {
+		return (n >= min && n <= max);
+	}
+
   public static inline function floor(n: Float):Int return Math.floor( n );
   public static inline function ceil(n: Float):Int return Math.ceil( n );
   public static inline function pow(n:Float, exp:Float):Float return Math.pow(n, exp);
@@ -64,8 +67,7 @@ class Floats {
     return r;
   }
 
-  #if !js @:generic #end
-  public inline static function lpad<T:Float>(n:T, c:String, size:Int):String {
+  public inline static function lpad(n:Float, c:String, size:Int):String {
     var s = '$n';
     #if debug if (!Numbers.isValidNumericValue(size) || size < 0 || c.length >= size) throw new pm.Error.WTFError('Make some sense'); #end
     while (s.length < size)
@@ -73,8 +75,7 @@ class Floats {
     return s;
   }
 
-	#if !js @:generic #end
-	public inline static function rpad<T:Float>(n:T, c:String, size:Int):String {
+	public inline static function rpad(n:Float, c:String, size:Int):String {
 		var s = '$n';
 		#if debug
 		if (!Numbers.isValidNumericValue(size) || size < 0 || c.length >= size)

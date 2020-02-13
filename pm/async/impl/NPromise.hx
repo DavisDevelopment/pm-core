@@ -109,7 +109,6 @@ abstract NPromise<T>(PromiseObject<T>) from PromiseObject<T> to PromiseObject<T>
 		} 
 		else {
 			var exec:Callback<Callback<Outcome<Array<T>, Dynamic>>> = function(cb:Callback<Outcome<Array<T>, Dynamic>>) {
-				Console.debug('inParallel.exec called');
 				a = a.copy();
 				var result:Array<T> = [],
  					pending = a.length,
@@ -144,7 +143,6 @@ abstract NPromise<T>(PromiseObject<T>) from PromiseObject<T> to PromiseObject<T>
 					if (--pending == 0)
 						done(Success(result));
 					else if (!hasNext()) {
-						Console.examine(pending, i, iter.hasNext());
 						throw new Error('Iteration has ended, but there are still pending promises(?)');
 					}
 				}
@@ -322,7 +320,6 @@ abstract NPromise<T>(PromiseObject<T>) from PromiseObject<T> to PromiseObject<T>
 	}
 
 	static inline function desyncCallback<T>(callback:Callback<T>):Callback<T> {
-        Console.warn('Call to NPromise.desyncCallback({0}); Should be handled by implementing class', callback);
 		return x -> defer(() -> callback(x));
 	}
 
