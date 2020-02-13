@@ -41,6 +41,37 @@ class Functions {
     public static function passTo<A, B>(a:A, f:A -> B):B {
         return f(a);
     }
+
+	#if (js || flash)
+	@:extern
+	inline
+    #end
+	/**
+	 * computes and returns the arity (number of positional arguments) of the given function pointer
+     * [TODO] implementation for Python platform; most likely completely doable
+	 * @param f the function whose arity is being computed
+	 * @return Int
+	 */
+	public static function getNumberOfParameters(f: haxe.Constraints.Function):Int {
+		#if php
+		var rf = untyped __php__("new ReflectionMethod($f[0], $f[1])");
+		return rf.getNumberOfParameters();
+		#elseif (js || flash)
+		return untyped f.length;
+        #elseif cpp
+        final sf = Std.string(f);
+        // trace(sf);
+        final i:Int = Std.parseInt(sf.substr(10));
+        if (pm.Numbers.isValidNumericValue(i))
+            return i;
+        #elseif neko
+		final sf = Std.string(f);
+		return Std.parseInt(sf.split(':')[1]);
+        #else
+        //
+		#end
+		throw 'Function.getNumberOfParameters not implemented for current platform';
+	}
 }
 
 class Nilads {
