@@ -199,7 +199,7 @@ class Arrays {
         #end
     }
     
-    #if js inline #end
+    #if js extern inline #end
     public static function every<T>(a:Array<T>, fn:T->Bool):Bool {
         #if js
             untyped {
@@ -218,7 +218,7 @@ class Arrays {
     }
     public static inline function all<T>(array:Array<T>, f:T->Bool):Bool return #if !js inline #end every(array, f);
 
-    #if js inline #end
+    #if js extern inline #end
     public static function flatMap<I, O>(a:Array<I>, fn:I -> Array<O>):Array<O> {
         #if js 
             untyped {

@@ -12,4 +12,8 @@ class Pair<A, B> {
     public function toString():String {
         return 'Pair($left, $right)';
     }
+
+    public static inline function of<L, R>(l:L, r:R):Pair<L, R> {
+        return new Pair(l, r);
+    }
 }

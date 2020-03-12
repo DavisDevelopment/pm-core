@@ -24,9 +24,8 @@ abstract Path (PathObject) from PathObject to PathObject {
 	public static function append(a:Path, b:Path):Path {
 		return new Path(PathStringTools.join([a.toString(), b.toString()]));
 	}
-	@:op(A / B)
-	@:commutative
-	public static inline function appendString(a:Path, s:String):Path {
+
+	@:op(A / B)	@:commutative public static inline function appendString(a:Path, s:String):Path {
 		return new Path(PathStringTools.join([a.toString(), s]));
 	}
 
@@ -34,15 +33,11 @@ abstract Path (PathObject) from PathObject to PathObject {
 		return new Path(PathStringTools.join([for (p in it) p]));
 	}
 
-	@:op(A == B)
-	public static inline function equality(a:Path, b:Path):Bool {
-		return a.normalize().toString() == b.normalize().toString();
+	@:op(A == B) public static function equality(a:Path, b:Path):Bool {
+		return (a : PathObject) == (b : PathObject) || a.normalize().toString() == b.normalize().toString();
 	}
 	
-	@:to
-	public inline function toString():String {
-		return this.toString();
-	}
+	@:to public inline function toString():String {return this.toString();}
 	
 	@:from
 	public static inline function fromString(s: String):Path {

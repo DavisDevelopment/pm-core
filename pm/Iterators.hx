@@ -92,3 +92,32 @@ class Iterators {
         return false;
     }
 }
+
+#if js
+class IteratorsOnJsTarget {
+	public static inline function toJsGenerator<T>(iter:Iterator<T>):Dynamic {
+		return js.Syntax.code('(()=>{
+            function *gen() {
+            	while ({0}.hasNext()) {
+                	yield {0}.next();
+                }
+            }
+            return gen;
+            })()', iter);
+	}
+}
+class IteratorFunctionsOnJsTarget {
+    public static inline function toGenerator<F:haxe.Constraints.Function>(f: F):Dynamic {
+        var f:Dynamic = f;
+		return js.Syntax.code('(()=>{
+            function *gen(...args) {
+               	const iter = {0}(...args);
+            	while (iter.hasNext()) {
+                	yield iter.next();
+                }
+            }
+            return gen;
+        })()', f);
+    }
+}
+#end

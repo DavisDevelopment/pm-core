@@ -17,27 +17,50 @@ enum ListRepr<T> {
 	Immutable list
 **/
 @:forward
+@:forwardStatics(Tl, Hd)
 @:using(pm.ImmutableList.Il)
 abstract ImmutableList<T>(ListRepr<T>) from ListRepr<T> to ListRepr<T> {
 	@:op(a & b)
 	static inline function prepend<T>(v:T, a:ImmutableList<T>):ImmutableList<T> {
 		return Hd(v,a);
 	}
+
+	@:op(a == b)
+	public function equals(other: ImmutableList<T>):Bool {
+		return Type.enumEq(this, other);
+	}
+
+	// @:op(a & b)
+	// inline public function append(value:T):ImmutableList
 	// @:op(a&b)
 	// static inline function append<T>(l:ImmutableList<T>, v:T):ImmutableList<T> return l.append([v]);
 	@:op(a & b)
 	public static inline function concat<T>(a:ImmutableList<T>, b:ImmutableList<T>):ImmutableList<T>
 		return a.append(b);
 
+	@:arrayAccess
+	public inline function at(n: Int):T {
+		return Il.nth(this, n);
+	}
+
 	public static inline function init<T>(size:Int, createItem:Int->T) {
 		return inline Il.init(size, createItem);
 	}
+
 	public static inline function alloc<T>(size:Int, x:T) {
 		return inline Il.make(size, x);
 	}
 
 	public function iterator():Iterator<T> {
 		return new ILItr<T>( this );
+	}
+
+	public function reverse():ImmutableList<T> {
+		return Il.rev(this);
+	}
+
+	public inline function join(sep: String):String {
+		return Il.join(sep, this);
 	}
 
 	public function sort(fn:T -> T -> Int):ImmutableList<T> {
@@ -76,6 +99,10 @@ abstract ImmutableList<T>(ListRepr<T>) from ListRepr<T> to ListRepr<T> {
 
 	public inline function reduce<Agg>(fn:Agg -> T -> Agg, agg:Agg):Agg {
 		return inline Il.fold_left(fn, agg, this);
+	}
+
+	public function has(x:T, ?eq:T->T->Bool):Bool {
+		return Il.exists(eq == null ? (item -> x == item) : (item -> eq(x, item)), this);
 	}
 	
 	@:to 
@@ -121,6 +148,9 @@ abstract ImmutableList<T>(ListRepr<T>) from ListRepr<T> to ListRepr<T> {
 		var a = toArray();
 		return Std.string(a);
 	}
+
+	public var length(get, never):Int;
+	private inline function get_length():Int return Il.length(this);
 }
 
 class ILItr<T> {
@@ -349,20 +379,6 @@ class Il {
 		}
 	}
 
-	public static function rev<T> (a:ImmutableList<T>) : ImmutableList<T> {
-		var res = Tl;
-		var l = a;
-		while (true) {
-			switch (l) {
-				case Tl: break;
-				case Hd(v, tl):
-					l = tl;
-					res = Hd(v, res);
-			}
-		}
-		return res;
-	}
-
 	public static function fold_left<A, B>(f:A->B->A, a:A, l:ImmutableList<B>) : A {
 		return switch (l) {
 			case Tl: a;
@@ -395,6 +411,7 @@ class Il {
 			case Hd(v, tl): f(v) || exists(f, tl);
 		}
 	}
+
 	public static function find<T> (f:T->Bool, l:ImmutableList<T>) : T {
 		return switch (l) {
 			case Tl: throw notFound();
@@ -420,5 +437,25 @@ class Il {
 
 	static function notFound(?what:Dynamic, ?pos:PosInfos) {
 		return new pm.Error.ValueError(what, 'Not Found', pos);
+	}
+
+	/**
+	 * creates reversed `ImmutableList` from `a`
+	 * @param a 
+	 * @return ImmutableList<T>
+	 */
+	public static function rev<T>(a: ImmutableList<T>):ImmutableList<T> {
+		var res = Tl;
+		var l = a;
+		while (true) {
+			switch (l) {
+				case Tl:
+					break;
+				case Hd(v, tl):
+					l = tl;
+					res = Hd(v, res);
+			}
+		}
+		return res;
 	}
 }

@@ -42,10 +42,6 @@ class Functions {
         return f(a);
     }
 
-	#if (js || flash)
-	@:extern
-	inline
-    #end
 	/**
 	 * computes and returns the arity (number of positional arguments) of the given function pointer
      * [TODO] implementation for Python platform; most likely completely doable

@@ -28,7 +28,7 @@ abstract Lazy<T> (ILazy<T>) from ILazy<T> to ILazy<T> {
     }
 
     @:from
-    public static inline function ofConst<T>(value: T):Lazy<T> {
+    public static function ofConst<T>(value: T):Lazy<T> {
         return new ConstLazy<T>( value );
     }
 

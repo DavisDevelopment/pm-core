@@ -41,8 +41,13 @@ class Helpers {
         return if (a == null) b else a;
     }
 
-    public static inline function nn<T>(v:Null<T>):Bool
+    public static inline function nn<T>(v:Null<T>):Bool {
+        #if js
+        return js.Syntax.code('typeof {0} !== "undefined" && {0} !== null', v);
+        #else
         return null != v;
+        #end
+    }
 
     public static inline function nnSlow<T>(v: Null<T>):Bool {
         return !(Type.typeof(v).match(Type.ValueType.TNull));
@@ -65,7 +70,7 @@ class Helpers {
     public static function same<T>(a:T, b:T):Bool {
         return
         #if js js.Syntax.strictEq(a, b);
-        #elseif python untyped __python__('({0} is {1})', a, b);
+        #elseif python python.Syntax.code('({0} is {1})', a, b);
         #else (a == b);
         #end
     }

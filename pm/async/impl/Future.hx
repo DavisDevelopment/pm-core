@@ -314,7 +314,7 @@ abstract Future<T>(FutureObject<T>) from FutureObject<T> to FutureObject<T> {
     
     //TODO: use this as `sync` for 2.0
     @:noUsing 
-    static inline public function lazy<A>(l: Lazy<A>):Future<A> {
+    static public function lazy<A>(l: Lazy<A>):Future<A> {
         return new SyncFuture(l);    
     }
     
@@ -323,7 +323,7 @@ abstract Future<T>(FutureObject<T>) from FutureObject<T> to FutureObject<T> {
      *  Example: `var i = Future.sync(1); // Future<Int>`
      */
     @:noUsing 
-    static inline public function sync<A>(v:A):Future<A> {
+    static public function sync<A>(v:A):Future<A> {
         return new SyncFuture(v); 
     }
         
