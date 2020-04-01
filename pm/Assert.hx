@@ -10,7 +10,15 @@ using haxe.macro.ExprTools;
 #end
 
 class Assert {
-    public static inline function assert(condition:Bool, ?error:Dynamic, ?pos:#if !macro PosInfos #else Dynamic #end):Void {
+	public static inline function assert(condition:Bool, ?error:Dynamic, ?pos:#if !macro PosInfos #else Dynamic #end) {
+        #if macro
+        assertRelease(condition, error);
+        #else
+        assertDebug(condition, error, pos);
+        #end
+    }    
+    
+    public static inline function assertRelease(condition:Bool, ?error:Dynamic, ?pos:#if !macro PosInfos #else Dynamic #end):Void {
         if ( !condition )
             _toss(error, pos);
     }

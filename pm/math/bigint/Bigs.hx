@@ -1,7 +1,7 @@
 package pm.math.bigint;
 
 import pm.core.BaseTools as Base;
-import pm.Assert.assert;
+import pm.Assert.assertRelease as assert;
 import pm.Numbers;
 
 using pm.Strings;

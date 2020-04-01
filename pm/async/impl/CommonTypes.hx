@@ -323,7 +323,7 @@ class WrappedError extends Error {
 			final jsErr:js.lib.Error = cast exception;
 			this.message = jsErr.message;
 			this.name = jsErr.name;
-			Console.debug(jsErr.stack);
+			//Console.debug(jsErr.stack);
 		}
 		#end
 	}

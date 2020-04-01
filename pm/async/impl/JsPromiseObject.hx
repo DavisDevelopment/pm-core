@@ -114,7 +114,7 @@ class JsPromiseTrigger<T> extends JsPromiseObject<T> implements PromiseTriggerOb
             _reject = rej;
         });
         jsp.catchError(function(error) {
-            Console.error(error);
+            //Console.error(error);
         });
         super(jsp);
     }

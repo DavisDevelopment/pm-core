@@ -141,7 +141,7 @@ class VectorTools {
     }
     
     public static inline function iterator<T>(v:Vector<T>):VectorIterator<T> {
-        return new VectorIterator<T>(v, v.length);
+        return new VectorIterator<T>(v, 0, v.length);
     }
 }
 

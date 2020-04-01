@@ -14,19 +14,68 @@ interface ISet<T> {
     function toString():String;
     function clear():Void;
 
-    // function size():Int;
-    // function delete(v: T):Bool;
-    // function has(v: T):Bool;
-	function subset(other:Set<T>):Bool;
-	function properSubset(other:Set<T>):Bool;
-	function equals(other:Set<T>):Bool;
+	/**
+	 * Returns true if all elements in `this` is also in `other`.
+	 * a <= b
+	 */
+    function subset(other:Set<T>):Bool;
+	/**
+	 * Returns true if all elements in `this` is also in `other`
+	 * and `other` has more elements than `this`.
+	 * a < b
+	 */
+    function properSubset(other:Set<T>):Bool;
+	/**
+	 * Returns true if `this` and `other` have the exact
+	 * same elements.
+	 * a == b
+	 */
+    function equals(other:Set<T>):Bool;
+	/**
+	 * Compare with another set by its cardinality.
+	 */
     function compareTo(other:Set<T>):Int;
-	function disjoint(other:Set<T>):Bool;
-	function union(other:Set<T>):Set<T>;
-	function intersect(other:Set<T>):Set<T>;
-	function difference(other:Set<T>):Set<T>;
-	function exclude(other:Set<T>):Set<T>;
-	function cartesianProduct<U>(other:Set<U>):Set<Pair<T, U>>;
+	/**
+	 * Returns true if `this` and `other` has no common elements.
+	 */
+    function disjoint(other:Set<T>):Bool;
+	/**
+	 * Returns a new set containing all elements from `this`
+	 * as well as elements from `other`.
+	 *
+	 * Operator: this | other
+	 * Venn: (###(###)###)
+	 */
+    function union(other:Set<T>):Set<T>;
+	/**
+	 * Returns a new set containing common elements that
+	 * appears in both sets.
+	 *
+	 * Operator: this & other
+	 * Venn: (   (###)   )
+	 */
+    function intersect(other:Set<T>):Set<T>;
+	/**
+	 * Returns a new set containing elements that appears in
+	 * `this` that does not appear in `other`.
+	 *
+	 * Operator: this - other
+	 * Venn: (###(   )   )
+	 */
+    function difference(other:Set<T>):Set<T>;
+	/**
+	 * Returns a new set containing elements that appears in
+	 * either `this` or `other`, but not both.
+	 *
+	 * Operator: this ^ other
+	 * Venn: (###(   )###)
+	 */
+    function exclude(other:Set<T>):Set<T>;
+	/**
+	 * Return a new set by performing a cartesian product on `other`.
+	 */
+    function cartesianProduct<U>(other:Set<U>):Set<Pair<T, U>>;
+    
 }
 
 typedef SetObject<T> = {

@@ -206,7 +206,7 @@ abstract BitSet(Array<Int32>) from Array<Int32> {
 	public function toString():String {
         var toStr1 = this.map(i32 -> BaseTools.toBase(i32, 2, '01')).join('');
         var toStr2 = range(length).map(i -> at(i)?'1':'0').join('');
-        Console.examine(toStr1, toStr2);
+        //Console.examine(toStr1, toStr2);
         return toStr2;
 	}
 

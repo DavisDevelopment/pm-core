@@ -21,7 +21,7 @@ class LazyConsole {
     public static inline function info(x:Dynamic):Void {
         println(x);
     }
-    public static inline function error(x: Dynamic):Void {
+    public static inline function error(x:Dynamic):Void {
         println(x);
     }
 

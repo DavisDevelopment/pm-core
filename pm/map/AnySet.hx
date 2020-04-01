@@ -1,5 +1,7 @@
 package pm.map;
 
+import StringTools.hex;
+
 class AnySet<T> implements ISet<T> {
 	public var length(get, never):Int;
 
@@ -15,7 +17,7 @@ class AnySet<T> implements ISet<T> {
     static inline function serialize_any(x: Dynamic):String {
         return try Std.string(x) catch (e: Dynamic)
         try hx_serialize(x) catch (e: Dynamic)
-        '';
+        hex(hashCodeOf(x), 10);
     }
 
     static inline function hx_serialize(x: Dynamic):String {
@@ -195,6 +197,214 @@ class AnySet<T> implements ISet<T> {
 	 */
 	public function cartesianProduct<U>(other:Set<U>):Set<Pair<T, U>> {
 		var s = new AnySet<Pair<T, U>>();
+		for (a in this)
+			for (b in other)
+				s.add(Pair.of(a, b));
+		return s;
+	}
+}
+
+@:access(pm.map)
+class OrderedAnySet<K, T> implements ISet<T> {
+	public var length(get, never):Int;
+
+	private var map: OrderedDictionary<K, T>;
+	private var toKey:T->K;
+	private var compare: K -> K -> Int;
+
+	public function new(toKey:T->K, ?cmp:K->K->Int, ?values:Iterable<T>) {
+		this.map = new OrderedDictionary(cmp);
+		// this.toKey = toKey == null ?(x:T) -> serialize_any(x) : toKey;
+		this.toKey = toKey;
+		this.compare = this.map.map.compare;
+
+		if (values != null)
+			for (v in values)
+				add(v);
+	}
+
+	static inline function serialize_any(x:Dynamic):String {
+		return try Std.string(x) catch (e:Dynamic) try
+			hx_serialize(x)
+		catch (e:Dynamic)
+			hex(hashCodeOf(x), 10);
+	}
+
+	static inline function hx_serialize(x:Dynamic):String {
+		var s = new haxe.Serializer();
+		s.useCache = true;
+		s.serialize(x);
+		return s.toString();
+	}
+
+	static inline function hashCodeOf(x:Dynamic):Int {
+		#if java
+		return (cast x : java.lang.Object).hashCode();
+		#elseif python
+		return untyped hash(x);
+		#else
+		throw new pm.Error('Invalid $x');
+		#end
+	}
+
+	public inline function get_length():Int {return map.length;}
+
+	public inline function exists(k:T):Bool {
+		return map.exists(toKey(k));
+	}
+
+	public inline function remove(k:T):Bool {
+		return map.remove(toKey(k));
+	}
+
+	public inline function iterator():Iterator<T> {
+		return map.iterator();
+	}
+
+	//TODO refactor to use algorithm used in other *Set.toString methods
+	public function toString():String {
+		return "{" + [for (x in this) x].join(", ") + "}";
+	}
+
+	public function toArray():Array<T> {
+		var res:Array<T> = pm.Arrays.alloc(length);
+		var i = 0;
+		for (v in this)
+			res[i++] = v;
+		// return [for (v in this) v];
+		return res;
+	}
+
+	public function add(v:T) {
+		final key = toKey(v);
+		if (!map.exists(key))
+			map.set(key, v);
+	}
+
+	public inline function clear():Void {
+		// map = new Dictionary<T>();
+		this.map.clear();
+	}
+
+	public inline function copy():OrderedAnySet<K, T> {
+		return new OrderedAnySet<K, T>(toKey, compare, this);
+	}
+
+	/**
+	 * Returns true if all elements in `this` is also in `other`.
+	 * a <= b
+	 */
+	public function subset(other:Set<T>):Bool {
+		for (x in this)
+			if (!other.exists(x))
+				return false;
+		return true;
+	}
+
+	/**
+	 * Returns true if all elements in `this` is also in `other`
+	 * and `other` has more elements than `this`.
+	 * a < b
+	 */
+	public inline function properSubset(other:Set<T>):Bool {
+		return length < other.length && subset(other);
+	}
+
+	/**
+	 * Returns true if `this` and `other` have the exact
+	 * same elements.
+	 * a == b
+	 */
+	public inline function equals(other:Set<T>):Bool {
+		return length == other.length && subset(other);
+	}
+
+	/**
+	 * Returns true if `this` and `other` has no common elements.
+	 */
+	public function disjoint(other:Set<T>):Bool {
+		for (x in this)
+			if (other.exists(x))
+				return false;
+		return true;
+	}
+
+	/**
+	 * Compare with another set by its cardinality.
+	 */
+	public inline function compareTo(other:Set<T>):Int {
+		return this.length - other.length;
+	}
+
+	/**
+	 * Returns a new set containing all elements from `this`
+	 * as well as elements from `other`.
+	 *
+	 * Operator: this | other
+	 * Venn: (###(###)###)
+	 */
+	public function union(other:Set<T>):Set<T> {
+		var s = new OrderedAnySet<K, T>(this.toKey, this.compare, this);
+		for (x in this)
+			s.add(x);
+		for (x in other)
+			s.add(x);
+		return s;
+	}
+
+	/**
+	 * Returns a new set containing common elements that
+	 * appears in both sets.
+	 *
+	 * Operator: this & other
+	 * Venn: (   (###)   )
+	 */
+	public function intersect(other:Set<T>):Set<T> {
+		var s = new OrderedAnySet<K, T>(this.toKey, this.compare, this);
+		for (x in this)
+			if (other.exists(x))
+				s.add(x);
+		return s;
+	}
+
+	/**
+	 * Returns a new set containing elements that appears in
+	 * `this` that does not appear in `other`.
+	 *
+	 * Operator: this - other
+	 * Venn: (###(   )   )
+	 */
+	public function difference(other:Set<T>):Set<T> {
+		var s = new OrderedAnySet<K, T>(this.toKey, this.compare, this);
+		for (x in this)
+			if (!other.exists(x))
+				s.add(x);
+		return s;
+	}
+
+	/**
+	 * Returns a new set containing elements that appears in
+	 * either `this` or `other`, but not both.
+	 *
+	 * Operator: this ^ other
+	 * Venn: (###(   )###)
+	 */
+	public function exclude(other:Set<T>):Set<T> {
+		var s = new OrderedAnySet<K, T>(this.toKey, this.compare, this);
+		for (x in this)
+			if (!other.exists(x))
+				s.add(x);
+		for (x in other)
+			if (!this.exists(x))
+				s.add(x);
+		return s;
+	}
+
+	/**
+	 * Return a new set by performing a cartesian product on `other`.
+	 */
+	public function cartesianProduct<U>(other:Set<U>):Set<Pair<T, U>> {
+		var s = new Set<Pair<T, U>>();
 		for (a in this)
 			for (b in other)
 				s.add(Pair.of(a, b));

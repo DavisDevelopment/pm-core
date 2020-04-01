@@ -1,5 +1,7 @@
 package pm.map;
 
+import pm.map.AnySet.OrderedAnySet;
+
 @:multiType(@:followWithAbstracts V)
 @:forward
 abstract Set<V>(ISet<V>) {
@@ -34,6 +36,8 @@ abstract Set<V>(ISet<V>) {
 	public inline function toArray<V>():Array<V>
 		return this.toArray();
 
+	// @:to static inline function toOrderedAnySet<K, V>(t:ISet<V>, ?key:V->K, ?cmp:K->K->Int, ?values:Iterable<V>):OrderedAnySet<K, V> return new OrderedAnySet(key, cmp, values);
+
 	@:to static inline function toStringSet<V:String>(t:ISet<V>, ?values:Iterable<String>):StringSet return new StringSet(values);
 
 	@:to static inline function toIntSet<V:Int>(t:ISet<V>, ?values:Iterable<Int>):IntSet return new IntSet(values);
@@ -50,4 +54,5 @@ abstract Set<V>(ISet<V>) {
   
   @:from static inline function fromOrderedSet<V>(set: OrderedSet<V>):Set<V> return set;
   @:from static inline function fromAnySet<V>(set: AnySet<V>):Set<V> return set;
+  @:from static inline function fromOrderedAnySet<K, V>(set:OrderedAnySet<K, V>):Set<V> return set;
 }

@@ -80,17 +80,12 @@ abstract Generator<T> (GeneratorObject<T>) from GeneratorObject<T> {
     public static inline function join<T>(gens: Array<Generator<T>>):Generator<T> {
         return Compound.make( gens );
     }
-
-    //@:from
-    //public static inline function gen<T>(next: Void->Step<T>):Generator<T> {
-        //return 
-    //}
 }
 
 interface GeneratorObject<T> {
     function next():Step<T>;
     function forEach(h: Handler<T>):Conclusion<T>;
-    function regroup<O>(regrouper: Regrouper<T>):RegroupResult<T
+    function regroup<O>(regrouper: Regrouper<T>):RegroupResult<T>;
 
     function decompose(into: Array<Generator<T>>):Void;
 
