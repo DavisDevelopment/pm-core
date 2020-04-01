@@ -337,6 +337,17 @@ class Arrays {
             if (f(x)) {if (r != null) r.set(x); return true;}
         return false;
     }
+    
+    public static inline function some<T>(a:Array<T>, f:T->Bool):Bool {
+        var r = false;
+        for (x in a) {
+            if (f(x)) {
+                r = true;
+                break;
+            }
+        }
+        return r;
+    }
 
     public static function take<T>(a:Array<T>, n:Int):Array<T> {
         return a.slice(0, n);
