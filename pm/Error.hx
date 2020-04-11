@@ -8,24 +8,27 @@ import haxe.PosInfos;
 class Error {
     /* Constructor Function */
     public function new(?msg:String, ?type:String, ?position:PosInfos) {
-        this.message = msg != null ? msg : '';
+        this.text = msg != null ? msg : '';
         this.name = type != null ? type : Type.getClassName(Type.getClass(this));
         this.position = position;
+
+        this.message = this.toString();
     }
 
 /* === Instance Methods === */
 
     @:keep
     public function toString():String {
-        return '' + position + ': ' + switch message {
+        return '' + position + ': ' + switch text {
             case '': name;
-            case _: '$name: $message';
+            case _: '$name: $text';
         }
     }
 
 /* === Instance Fields === */
 
     public var name(default, null): String;
+    public var text(default, null): String;
     public var message(default, null): String;
     public var position(default, null): PosInfos;
 

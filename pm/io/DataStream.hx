@@ -357,6 +357,6 @@ class DataStreamException<Err> extends pm.Error.ValueError<Err> {
 
 class DataStreams {
     public static inline function await<T>(value:Lazy<Res<T>>):Promise<T> {
-        throw 'ass';
+        throw 'stuff';
     }
 }

@@ -3,9 +3,25 @@ package pm;
 #if macro
 import haxe.macro.Context;
 import haxe.macro.Expr;
+import haxe.macro.MacroStringTools as MStr;
 
 using haxe.macro.ExprTools;
+using haxe.macro.MacroStringTools;
+using haxe.macro.TypeTools;
+using haxe.macro.ComplexTypeTools;
+
+#if tink_macro
+import tink.macro.*;
+using tink.MacroApi;
 #end
+#end
+
+#if js
+import js.Syntax.code;
+#end
+
+using Lambda;
+using pm.Arrays;
 
 class Helpers {
     public static macro function matchFor<I, O>(e:ExprOf<Dynamic>, args:Array<Expr>) {
@@ -43,7 +59,7 @@ class Helpers {
 
     public static inline function nn<T>(v:Null<T>):Bool {
         #if js
-        return js.Syntax.code('typeof {0} !== "undefined" && {0} !== null', v);
+        return js.Syntax.code('(typeof {0} !== "undefined" && {0} !== null)', v);
         #else
         return null != v;
         #end
@@ -76,7 +92,41 @@ class Helpers {
     }
     public static inline function strictEq<T>(a:T, b:T):Bool return inline Helpers.same(a, b);
 
+    public static function log(x: Dynamic) {
+        #if js
+        final c = code('{0}.console || console', js.Lib.global);
+        if (nn(c))
+            c.log(x);
+        #elseif Console.hx
+        Console.log(x);
+        #end
+    }
 
+    // #if macro
+    public static macro function stopwatch(args: Array<Expr>):ExprOf<Float> {
+        function emap(block:Array<Expr>, e:Expr):Expr {
+            switch e.expr {
+                case EBlock(exprs)|EParenthesis({expr:EBlock(exprs)}):
+                    for (e in exprs)
+                        block.push(e);
+
+                default:
+                    block.push(e);
+            }
+            return e;
+        }
+
+        var body:Array<Expr> = args.reduce(function(block:Array<Expr>, e:Expr) {
+            emap(block, e);
+            return block;
+        }, new Array());
+
+        // var bodyBlock = macro @:mergeBlock $b{args};
+        body.unshift(macro var startTime:Float = pm.Timer.time());
+        body.push(macro (pm.Timer.time() - startTime));
+
+        return macro ($b{body});
+    }
 }
 
 class MacroHelpers {

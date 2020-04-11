@@ -3,6 +3,12 @@ package pm;
 import haxe.io.Error as IOError;
 import pm.Assert.assert;
 
+#if java
+import java.vm.Gc.run as runGc;
+#elseif cpp
+import cpp.vm.Gc.run as runGc;
+#end
+
 #if cpp
 import cpp.NativeArray;
 #end
@@ -124,6 +130,28 @@ class Arrays {
      **/
     public static function nullify<T>(a: Array<T>) {
         fill(a, null);
+    }
+
+    /**
+     * deallocate that darned Array
+     * @param arr 
+     * @param reducer 
+     * @param init 
+     * @return B
+     */
+    extern inline public static function free<T>(array:Array<T>, level:Int=1) {
+        if (array != null) {
+            if (array.length != 0) {
+                var i = 0, len = array.length;
+                while (i < len)
+                    array[i++] = null;
+                array.resize(0);
+            }
+            array = null;
+        }
+        #if (cpp || java)
+        runGc(false);
+        #end
     }
 
     /**

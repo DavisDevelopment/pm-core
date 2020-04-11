@@ -17,8 +17,8 @@ enum ListRepr<T> {
 	Immutable list
 **/
 @:forward
-@:forwardStatics(Tl, Hd)
 @:using(pm.ImmutableList.Il)
+@:forwardStatics(Tl, Hd)
 abstract ImmutableList<T>(ListRepr<T>) from ListRepr<T> to ListRepr<T> {
 	@:op(a & b)
 	static inline function prepend<T>(v:T, a:ImmutableList<T>):ImmutableList<T> {

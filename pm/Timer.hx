@@ -244,29 +244,44 @@ the target platform.
 #end
   }
 
-/**
-Returns a time value in milliseconds. Where supported, the decimal value represents microseconds.
+	/**
+		Returns a time value in milliseconds. Where supported, the decimal value represents microseconds.
 
-Note that the initial value might change from platform to platform so only delta measurements make sense.
-**/
-  inline public static function time() : Float
-#if js
-    return untyped __js__("performance").now();
-#elseif flash
-    return flash.Lib.getTimer();
-#elseif (cpp || neko || eval)
-    return haxe.Timer.stamp() * 1000.0;
-#elseif cs
-    return (cs.system.Environment.TickCount : Float);
-#elseif java
-    return cast(java.lang.System.nanoTime(), Float) / 1000000.0;
-#elseif php
-    return untyped __php__('microtime(true) * 1000.0');
-#elseif python
-    return python.lib.Time.clock() * 1000;
-#else
-    return throw 'Timer.time() is not implemented in this target';
-#end
+		Note that the initial value might change from platform to platform so only delta measurements make sense.
+	**/
+	inline public static function time():Float {
+		#if (js && (hxnodejs || nodejs || node))
+		  return pm.Timer.hrtime();
+		#elseif js
+		  return untyped __js__("performance").now();
+		#elseif flash
+		  return flash.Lib.getTimer();
+		#elseif (cpp || neko || eval)
+		  return haxe.Timer.stamp() * 1000.0;
+		#elseif cs
+		  return (cs.system.Environment.TickCount : Float);
+		#elseif java
+		  return cast(java.lang.System.nanoTime(), Float) / 1000000.0;
+		#elseif php
+		  return untyped __php__('microtime(true) * 1000.0');
+		#elseif python
+		  return python.lib.Time.clock() * 1000;
+		#else
+		  return throw 'Timer.time() is not implemented in this target';
+		#end
+  }
+
+	#if (js && (hxnodejs || nodejs || node))
+    static function hrtime():Float {
+      // var tmp = js.Node.process.hrtime();
+      // return tmp[0] * 1e3 + tmp[1] / 1e6;
+      // final t = js.Node.process.hrtime();
+      // return _hrc[0] * 1e3 + _hrc[1] / 1e6;
+      js.Syntax.code('const [a, b] = {0}', js.Node.process.hrtime());
+      return js.Syntax.code('a*{0} + b/{1}', 1e3, 1e6);
+    }
+    private static var _hrc:Array<Float> = {[0.0, 0.0];};
+  #end
 
   static var _resolution : Null<Float>;
   public static function resolution() : Float {

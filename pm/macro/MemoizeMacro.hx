@@ -100,7 +100,7 @@ class MemoizeMacro {
                 return output;
 
             default:
-                throw 'Ass';
+                throw 'Stuff';
         }
     }
 }
